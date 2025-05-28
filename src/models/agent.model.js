@@ -128,8 +128,8 @@ const Agent = {
                 return { success: false, message: 'Locations must be a non-empty array' };
             }
 
-            const values = location_ids.map(locId => [agentId, locId]);
-            const query = `INSERT INTO agent_working_locations (agent_id, location_id) VALUES ?`;
+            const values = location_ids.map(locId => [agentId, locId,1]);
+            const query = `INSERT INTO agent_working_locations (agent_id, location_id,ranking) VALUES ?`;
 
             await pool.query(query, [values]);
 

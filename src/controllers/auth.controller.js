@@ -255,17 +255,19 @@ const UpdateProfile = catchAsync(async (req, res) => {
 
 const updateAgentPositions = catchAsync(async (req, res) => {
   console.log(req.body)
-  const { agentId, newPosition } = req.body;
-
+  const { agentId, newPosition,locationId } = req.body;
   // Check if agentId and newPosition exist
-  if (agentId === '' || undefined || newPosition === '' || undefined) {
+  if (agentId === '' || undefined || newPosition === '' || undefined || locationId === '' ) {
     return res.status(400).send({
       message: "agentId and newPosition are required fields"
     });
   }
 
   // Example: update user by id
-  const data = await userService.updateAgentPositionsById(agentId, { position: newPosition });
+  const data = await userService.updateAgentPositionsById(agentId, {
+  position: newPosition,
+  locationId: locationId,
+});
 
   res.status(200).send({
     message: data,

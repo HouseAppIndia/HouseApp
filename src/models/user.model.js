@@ -455,89 +455,84 @@ const User = {
     }
   },
 
-
-  async updateAgentPosition(agentId, newPosition) {
-    const connection = await pool.getConnection();
-
-    try {
-      await connection.beginTransaction();
-
-      // 1. Get current position of the agent
-      const [rows] = await connection.execute(
-        'SELECT position FROM agents WHERE id = ?',
-        [agentId]
-      );
-
-      if (rows.length === 0) {
-        throw new Error('Agent not found');
-      }
-
-      const currentPosition = rows[0].position;
-
-      if (currentPosition === newPosition) {
-        await connection.release();
-        return { success: true, message: 'No position change needed' };
-      }
-
-      // Insert into history
-      await pool.execute(`
-        INSERT INTO agent_position_history (agent_id, old_position, new_position)
-        VALUES (?, ?, ?)
-      `, [agentId, currentPosition, newPosition]);
-
-      // 2. Temporarily set this agent's position to -1 (safe temp value)
-      await connection.execute(
-        'UPDATE agents SET position = -1 WHERE id = ?',
-        [agentId]
-      );
-
-      // 3. Shift other agents
-      if (newPosition < currentPosition) {
-        // Moving UP → shift others DOWN
-        await connection.execute(
-          'UPDATE agents SET position = position + 1 WHERE position >= ? AND position < ?',
-          [newPosition, currentPosition]
-        );
-      } else {
-        // Moving DOWN → shift others UP
-        await connection.execute(
-          'UPDATE agents SET position = position - 1 WHERE position <= ? AND position > ?',
-          [newPosition, currentPosition]
-        );
-      }
-
-      // 4. Now update the agent to the new position
-      await connection.execute(
-        'UPDATE agents SET position = ? WHERE id = ?',
-        [newPosition, agentId]
-      );
-
-      await connection.commit();
-      connection.release();
-      return { success: true, message: 'Position updated successfully' };
-
-    } catch (error) {
-      await connection.rollback();
-      connection.release();
-      console.error("🔥 Error during updateAgentPosition:", error);
-      throw new Error('Failed to update agent position');
-    }
-  }
-  ,
-async getAgentsWithDetails(page, pageSize, locationId) {
-  console.log(page, pageSize, locationId,"jefj")
+  async updateAgentRanking(agentId, locationId, newRanking) {
+  const connection = await pool.getConnection();
   try {
-    const parsedPage = parseInt(page, 10);
-    const parsedPageSize = parseInt(pageSize, 10);
-    const offset = (parsedPage - 1) * parsedPageSize;
+    await connection.beginTransaction();
 
-    let dataQuery;
-    let countQuery;   
-    if (locationId == "null") {
-      // No location filter
-      console.log("hello")
-      dataQuery = `
-        SELECT 
+    // 🔁 Normalize rankings first
+    await connection.query(`SET @r = 0`);
+    await connection.execute(
+      `UPDATE agent_working_locations
+       SET ranking = (@r := @r + 1)
+       WHERE location_id = ?
+       ORDER BY ranking ASC`,
+      [locationId]
+    );
+
+    // ✅ Get current ranking of the agent
+    const [rows] = await connection.execute(
+      `SELECT ranking FROM agent_working_locations 
+       WHERE agent_id = ? AND location_id = ?`,
+      [agentId, locationId]
+    );
+    if (rows.length === 0) {
+      throw new Error('Agent not found in location');
+    }
+    const currentRanking = rows[0].ranking;
+
+    // 🔁 Shift other agents' rankings
+    if (newRanking < currentRanking) {
+      const [res] = await connection.execute(
+        `UPDATE agent_working_locations 
+         SET ranking = ranking + 1 
+         WHERE location_id = ? AND ranking >= ? AND ranking < ?`,
+        [locationId, newRanking, currentRanking]
+      );
+      console.log("↑ Ranking shift up:", res.affectedRows);
+    } else if (newRanking > currentRanking) {
+      const [res] = await connection.execute(
+        `UPDATE agent_working_locations 
+         SET ranking = ranking - 1 
+         WHERE location_id = ? AND ranking <= ? AND ranking > ?`,
+        [locationId, newRanking, currentRanking]
+      );
+      console.log("↓ Ranking shift down:", res.affectedRows);
+    }
+
+    // 🎯 Update agent's new rank
+    await connection.execute(
+      `UPDATE agent_working_locations 
+       SET ranking = ? 
+       WHERE agent_id = ? AND location_id = ?`,
+      [newRanking, agentId, locationId]
+    );
+
+    await connection.commit();
+    return { message: "Ranking updated successfully" };
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error during updateAgentRanking:", error);
+    throw new Error("Failed to update agent ranking");
+  } finally {
+    connection.release();
+  }
+}
+,
+  async getAgentsWithDetails(page, pageSize, locationId) {
+    console.log(page, pageSize, locationId, "jefj")
+    try {
+      const parsedPage = parseInt(page, 10);
+      const parsedPageSize = parseInt(pageSize, 10);
+      const offset = (parsedPage - 1) * parsedPageSize;
+
+      let dataQuery;
+      let countQuery;
+      if (locationId == "null") {
+        // No location filter
+        console.log("hello")
+        dataQuery = `
+ SELECT 
           a.id AS agent_id,
           a.name,
           a.phone,
@@ -548,72 +543,74 @@ async getAgentsWithDetails(page, pageSize, locationId) {
           a.rating,
           a.languages_spoken,
           oa.address AS office_address,
-          GROUP_CONCAT(DISTINCT l.name ORDER BY l.ranking SEPARATOR ', ') AS working_locations,
-          GROUP_CONCAT(DISTINCT l.ranking ORDER BY l.ranking SEPARATOR ', ') AS rankings
+          GROUP_CONCAT(DISTINCT l.name ORDER BY awl.ranking SEPARATOR ', ') AS working_locations,
+          GROUP_CONCAT(DISTINCT awl.ranking ORDER BY awl.ranking SEPARATOR ', ') AS rankings
         FROM agents a
         LEFT JOIN office_address oa ON a.id = oa.agent_id
-        LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id
+        LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id 
         LEFT JOIN localities l ON awl.location_id = l.id
         GROUP BY a.id
         ORDER BY a.id
-        LIMIT ${parsedPageSize} OFFSET ${offset};;
-      `;
-      countQuery = `SELECT COUNT(*) AS total FROM agents;`;
-    } else {
-      // Filter by locationId
-      console.log("else")
-      dataQuery = `
-        SELECT 
-          a.id AS agent_id,
-          a.name,
-          a.phone,
-          a.status,
-          a.whatsapp_number,
-          a.experience_years,
-          a.image_url,
-          a.rating,
-          a.languages_spoken,
-          oa.address AS office_address,
-          GROUP_CONCAT(DISTINCT l.name ORDER BY l.ranking SEPARATOR ', ') AS working_locations,
-          GROUP_CONCAT(DISTINCT l.ranking ORDER BY l.ranking SEPARATOR ', ') AS rankings
-        FROM agents a
-        LEFT JOIN office_address oa ON a.id = oa.agent_id
-        LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id
-        LEFT JOIN localities l ON awl.location_id = l.id
-        WHERE awl.location_id = ${locationId}
-        GROUP BY a.id
-        ORDER BY a.id
-         LIMIT ${parsedPageSize} OFFSET ${offset};
-      `;
-   
+  LIMIT ${parsedPageSize} OFFSET ${offset};
+`;
 
-      countQuery = `
+        countQuery = `SELECT COUNT(*) AS total FROM agents;`;
+      } else {
+        // Filter by locationId
+        console.log("else")
+        dataQuery = `
+  SELECT 
+    a.id AS agent_id,
+    a.name,
+    a.phone,
+    a.status,
+    a.whatsapp_number,
+    a.experience_years,
+    a.image_url,
+    a.rating,
+    a.languages_spoken,
+    oa.address AS office_address,
+    GROUP_CONCAT(DISTINCT l.name ORDER BY awl.ranking SEPARATOR ', ') AS working_locations,
+    GROUP_CONCAT(DISTINCT awl.ranking ORDER BY awl.ranking SEPARATOR ', ') AS rankings,
+    MIN(awl.ranking) AS min_ranking
+  FROM agents a
+  LEFT JOIN office_address oa ON a.id = oa.agent_id
+  LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id
+  LEFT JOIN localities l ON awl.location_id = l.id
+  WHERE awl.location_id = ${locationId}
+  GROUP BY a.id
+  ORDER BY min_ranking ASC
+  LIMIT ${parsedPageSize} OFFSET ${offset};
+`;
+
+
+        countQuery = `
         SELECT COUNT(DISTINCT a.id) AS total
         FROM agents a
         JOIN agent_working_locations awl ON a.id = awl.agent_id
         WHERE awl.location_id = ${locationId};
       `;
+      }
+
+      const [rows] = await pool.execute(dataQuery);
+      const [countResult] = await pool.execute(countQuery);
+      const total = countResult[0].total;
+
+      return {
+        data: rows,
+        pagination: {
+          total,
+          page: parsedPage,
+          pageSize: parsedPageSize,
+          totalPages: Math.ceil(total / parsedPageSize),
+        },
+      };
+    } catch (error) {
+      console.error("❌ Error in getAgentsWithDetails:", error.message);
+      throw new Error("Failed to get agent details");
     }
-
-    const [rows] = await pool.execute(dataQuery);
-    const [countResult] = await pool.execute(countQuery);
-    const total = countResult[0].total;
-
-    return {
-      data: rows,
-      pagination: {
-        total,
-        page: parsedPage,
-        pageSize: parsedPageSize,
-        totalPages: Math.ceil(total / parsedPageSize),
-      },
-    };
-  } catch (error) {
-    console.error("❌ Error in getAgentsWithDetails:", error.message);
-    throw new Error("Failed to get agent details");
   }
-}
-,
+  ,
 
 
   async getAllUsersWithPagination(page = 1, limit = 10) {

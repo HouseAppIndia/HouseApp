@@ -139,18 +139,19 @@ const deleteUserById = async (userId) => {
 };
 
 
-const updateAgentPositionsById = async (agentId, { position: newPosition }) => {
-  try {
-    const result = await User.updateAgentPosition(agentId, newPosition);
-    console.log(result)
-    // result ka format check karein: assume result.affectedRows
-    if (result && result.affectedRows > 0) {
+const updateAgentPositionsById = async (agentId, { position: newPosition,locationId: locationId, }) => {
+   try {
+    const result = await User.updateAgentRanking(agentId, locationId, newPosition);
+
+    // Check result format
+    if (result && result.success) {
       return { success: true, message: 'Agent position updated successfully.' };
     } else {
-      return result
+      return { success: false, message: result?.message || 'Agent position not updated.' };
     }
 
   } catch (error) {
+    console.error("🔥 Error in updateAgentPositionsById:", error);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to update agent position');
   }
 };
