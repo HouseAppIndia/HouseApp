@@ -80,37 +80,37 @@ const Client = {
 
   // Get agents working at a location
   async getAgentsByLocation(locationId, limit = 10, offset = 0) {
+    console.log(locationId, limit = 10, offset = 0)
     try {
-      if (!locationId) return { success: false, message: 'Location ID is required.', data: [] };
+      if (!locationId) { return { success: false, message: 'Location ID is required.', data: [] }; }
+          const [rows] = await pool.execute(`
+      SELECT
+        a.id AS agent_id,
+        a.name,
+        a.phone,
+        a.status,
+        a.whatsapp_number,
+        a.experience_years,
+        a.image_url,
+        a.rating,
+        a.languages_spoken,
+        oa.address AS office_address,
+        MIN(awl.ranking) AS min_ranking
+      FROM agents a
+      LEFT JOIN office_address oa ON a.id = oa.agent_id
+      LEFT JOIN agent_working_locations awl
+        ON a.id = awl.agent_id
+        AND awl.location_id = ${locationId}
+        AND awl.is_approved = TRUE
+      LEFT JOIN localities l ON awl.location_id = l.id
+      WHERE awl.is_approved = TRUE
+      GROUP BY a.id
+      ORDER BY min_ranking
+      LIMIT 5;
+    `); // location_id passed as parameter
 
-      const [location] = await pool.execute(
-        'SELECT id, name FROM localities WHERE id = ?',
-        [locationId]
-      );
+    return rows; 
 
-      if (!location.length) return { success: false, message: 'Location not found.', data: [] };
-      const [rows] = await pool.execute(
-        `
-    SELECT 
-      a.*, 
-      l.name AS locality_name,
-      1 AS is_primary_location
-    FROM agents a
-    JOIN agent_working_locations awl ON a.id = awl.agent_id
-    JOIN localities l ON awl.location_id = l.id
-    WHERE awl.is_approved = TRUE
-      AND awl.location_id = ?
-    ORDER BY a.rating DESC
-    LIMIT ? OFFSET ?
-    `,
-        [locationId, limit, offset]
-      );
-
-      return {
-        success: rows.length > 0,
-        message: rows.length ? 'Agents fetched successfully.' : 'No agents found.',
-        data: rows,
-      };
     } catch (error) {
       console.error('Error fetching agents:', error);
       return { success: false, message: 'Failed to fetch agents.', data: [] };
@@ -119,7 +119,7 @@ const Client = {
 
 
   async updateAgentAverageRating(agent_id) {
-    console.log(agent_id,"agent_idagent_id")
+    console.log(agent_id, "agent_idagent_id")
     const [[{ avgRating }]] = await pool.execute(
       `SELECT ROUND(AVG(rating), 2) as avgRating FROM user_review WHERE agent_id = ?`,
       [agent_id]
@@ -135,7 +135,7 @@ const Client = {
 
   // Add a new review
   async createReview({ user_id, agent_id, comment = '', rating }) {
-    console.log({ user_id, agent_id, comment, rating },"jdkjsl")
+    console.log({ user_id, agent_id, comment, rating }, "jdkjsl")
     try {
       const [result] = await pool.execute(
         `INSERT INTO user_review (user_id, agent_id, comment, rating)
@@ -274,7 +274,7 @@ const Client = {
 
   // Update user details
   async updateUserById(userId, updates) {
-    console.log(userId,"gg")
+    console.log(userId, "gg")
     try {
       const fields = [];
       const values = [];
@@ -323,7 +323,7 @@ const Client = {
     }
   },
 
-    // Get user by ID
+  // Get user by ID
   async geAgentsById(agent_id) {
     try {
       const [rows] = await pool.execute('SELECT * FROM agents WHERE id = ?', [agent_id]);
