@@ -1,0 +1,9 @@
+module.exports.Token = require('./token.model');
+module.exports.User = require('./user.model');
+module.exports.Agent=require('./agent.model')
+module.exports.Client=require('./client.model')
+module.exports.AgentInteraction =require('./agent_interactions.model')
+module.exports.City =require('./cities.model')
+module.exports.Areas=require('./area.model')
+module.exports.localities=require('./locality.model')
+module.exports.LocalityLimits=require('./localityLimit.model')
