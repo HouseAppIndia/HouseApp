@@ -151,8 +151,12 @@ const deleteUserAccount = async (user_id, otp) => {
 const getAgentsByLocation = async (locationId) => {
   try {
     if (!locationId) throw new ApiError(httpStatus.BAD_REQUEST, 'Location ID is required');
+     const result =await Client.getLimitCheck(locationId)
+     const limit =result?.data_limit==undefined?10:result?.data_limit
+     console.log(result)
+     console.log(limit)
 
-    const agents = await Client.getAgentsByLocation(locationId);
+    const agents = await Client.getAgentsByLocation(locationId,limit);
     if (!agents || agents.length === 0) {
       throw new ApiError(httpStatus.NOT_FOUND, `No agents found for location: ${locationId}`);
     }

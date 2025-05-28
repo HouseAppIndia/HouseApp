@@ -79,11 +79,11 @@ const Client = {
   },
 
   // Get agents working at a location
-  async getAgentsByLocation(locationId, limit = 10, offset = 0) {
-    console.log(locationId, limit = 10, offset = 0)
+  async getAgentsByLocation(locationId, limit, offset = 0) {
+    console.log(locationId, limit, offset = 0)
     try {
       if (!locationId) { return { success: false, message: 'Location ID is required.', data: [] }; }
-          const [rows] = await pool.execute(`
+      const [rows] = await pool.execute(`
       SELECT
         a.id AS agent_id,
         a.name,
@@ -106,10 +106,10 @@ const Client = {
       WHERE awl.is_approved = TRUE
       GROUP BY a.id
       ORDER BY min_ranking
-      LIMIT 5;
+      LIMIT ${limit};
     `); // location_id passed as parameter
 
-    return rows; 
+      return rows;
 
     } catch (error) {
       console.error('Error fetching agents:', error);
@@ -333,6 +333,15 @@ const Client = {
       console.error('Error fetching user by ID:', error);
       return { success: false, message: 'Failed to fetch user.' };
     }
+  },
+  async getLimitCheck(locationId){
+    const query = `
+    SELECT data_limit 
+    FROM locality_limits 
+    WHERE locality_id = ${locationId}
+  `;
+  const [rows] = await pool.execute(query);
+  return rows[0]
   },
 };
 
