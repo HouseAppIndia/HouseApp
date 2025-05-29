@@ -1,0 +1,134 @@
+const pool = require('../config/db.config');
+
+const Banner = {
+  async createBaner(title, image_url, link_url, start_time, end_time, is_active = true, position = 1, priority = 1) {
+    try {
+      const [result] = await pool.execute(
+        `INSERT INTO banners (title, image_url, link_url, start_time, end_time, is_active, position, priority)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [title, image_url, link_url, start_time, end_time, is_active, position, priority]
+      );
+      return {
+        success: true,
+        id: result.insertId,
+        message: 'Banner created successfully'
+      };
+    } catch (error) {
+      console.error('Error in createBanner:', error);
+      return {
+        success: false,
+        message: 'Failed to create banner',
+        error: error.message,
+      };
+    }
+  },
+
+  async getAllBanners() {
+    try {
+      const [banners] = await pool.execute('SELECT * FROM banners');
+      return { success: true, data: banners };
+    } catch (error) {
+      console.error('Error in getAllBanners:', error);
+      return {
+        success: false,
+        message: 'Failed to get banners',
+        error: error.message,
+      };
+    }
+  },
+
+  async getBannerById(id) {
+    try {
+      const [banners] = await pool.execute('SELECT * FROM banners WHERE id = ?', [id]);
+      if (banners.length === 0) return { success: false, message: 'Banner not found' };
+      return { success: true, data: banners[0] };
+    } catch (error) {
+      console.error('Error in getBannerById:', error);
+      return {
+        success: false,
+        message: 'Failed to get banner',
+        error: error.message,
+      };
+    }
+  },
+
+  async deleteBanner(id) {
+    try {
+      const [result] = await pool.execute('DELETE FROM banners WHERE id = ?', [id]);
+      if (result.affectedRows === 0) return { success: false, message: 'Banner not found' };
+      return { success: true, message: 'Banner deleted successfully' };
+    } catch (error) {
+      console.error('Error in deleteBanner:', error);
+      return {
+        success: false,
+        message: 'Failed to delete banner',
+        error: error.message,
+      };
+    }
+  },
+
+  async updateBanner(id, updateData) {
+    try {
+      const fields = [];
+      const values = [];
+
+      if (updateData.title) {
+        fields.push('title = ?');
+        values.push(updateData.title);
+      }
+
+      if (updateData.link_url) {
+        fields.push('link_url = ?');
+        values.push(updateData.link_url);
+      }
+      if (updateData.start_time) {
+        fields.push('start_time = ?');
+        values.push(updateData.start_time);
+      }
+
+      if (updateData.end_time) {
+        fields.push('end_time = ?');
+        values.push(updateData.end_time);
+      }
+
+      if (updateData.is_active !== undefined) {
+        fields.push('is_active = ?');
+        values.push(updateData.is_active);
+      }
+
+      if (updateData.position !== undefined) {
+        fields.push('position = ?');
+        values.push(updateData.position);
+      }
+
+      if (updateData.priority !== undefined) {
+        fields.push('priority = ?');
+        values.push(updateData.priority);
+      }
+
+      if (fields.length === 0) {
+        return { success: false, message: 'No fields to update' };
+      }
+
+      fields.push('updated_at = CURRENT_TIMESTAMP');
+      values.push(id);
+
+      const query = `UPDATE banners SET ${fields.join(', ')} WHERE id = ?`;
+      const [result] = await pool.execute(query, values);
+
+      return {
+        success: result.affectedRows > 0,
+        message: result.affectedRows > 0 ? 'Banner updated successfully' : 'No changes made'
+      };
+    } catch (error) {
+      console.error('Error in updateBanner:', error);
+      return {
+        success: false,
+        message: 'Failed to update banner',
+        error: error.message
+      };
+    }
+  }
+};
+
+module.exports = Banner;

@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
-const { User } = require('../models');
+const { User,Banner } = require('../models');
 const ApiError = require('../utils/ApiError');
+const { data } = require('../config/logger');
 
 /**
  * Create a user
@@ -287,6 +288,101 @@ const fetchInteractionHistory=async(range)=>{
    }
 }
 
+const uploadBannerWithImage = async (
+  title,
+  image_url,
+  link_url,
+  start_time,
+  end_time
+) => {
+  try {
+    const data = await Banner.create({
+      title,
+      image_url,
+      link_url,
+      start_time,
+      end_time,
+    });
+    
+    return {
+      success: true,
+      message: 'Banner created successfully',
+      data,
+    };
+  } catch (error) {
+    console.error('Error creating banner:', error.message);
+    return {
+      success: false,
+      message: 'Failed to create banner',
+      error: error.message,
+    };
+  }
+};
+
+const retrieveAllBanners  =async()=>{
+  try {
+    const banners = await Banner.getAllBanners();
+    if (!banners || banners.length === 0) {
+      return {
+        success: false,
+        message: "No banners found",
+        data: [],
+      };
+    }
+
+    return {
+      success: true,
+      message: "Banners retrieved successfully",
+      data: banners,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: 'Failed to create banner',
+      error: error.message,
+    };
+  }
+}
+
+const updateExistingBanner =async(id,data)=>{
+  try {
+      const update=await Banner.updateBanner(id,data)
+      return update 
+  } catch (error) {
+      return {
+      success: false,
+      message: 'Failed to Update banner',
+      error: error.message,
+    };
+  }
+}
+
+const getSelectedBanner =async(id)=>{
+   try {
+      const banners =await Banner.getBannerById(id)
+      if (!banners || banners.length === 0) {
+      return {
+        success: false,
+        message: "No banners found",
+        data: [],
+      };
+    }
+
+    return {
+      success: true,
+      message: "Banners retrieved successfully",
+      data: banners,
+    };
+
+   } catch (error) {
+  return {
+      success: false,
+      message: 'Failed to Update banner',
+      error: error.message,
+    };
+   }
+}
+
 module.exports = {
   createUser,
   queryUsers,
@@ -306,5 +402,9 @@ module.exports = {
   getAllNotificationLocalitieWise,
   fetchEmployeeLocalities,
   fetchAllUserReviews,
-  fetchInteractionHistory
+  fetchInteractionHistory,
+  uploadBannerWithImage,
+  retrieveAllBanners,
+  updateExistingBanner,
+  getSelectedBanner
 };

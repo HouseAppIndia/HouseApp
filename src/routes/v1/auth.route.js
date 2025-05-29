@@ -2,6 +2,7 @@ const express = require('express');
 const validate = require('../../middlewares/validate');
 const authValidation = require('../../validations/auth.validation');
 const authController = require('../../controllers/auth.controller');
+const uploadImage =require('../../middlewares/UploadBanner')
 
 const auth = require('../../middlewares/auth');
 
@@ -34,6 +35,8 @@ router.route('/update-positions').put(auth,authController.updateAgentPositions)
 router.route('/position-history-agents').get(authController.getAgentPositionHistory)
 router.route('/reviews').get(authController.getAllUserReviews)
 router.route('/interactions').get(authController.getAgentInteractionLogs)
+router.route('/banners').post(uploadImage.single("image"),authController.saveBanner).get(authController.fetchAllBanners)
+router.route('/banner/:id').patch(authController.updateBannerInfo).get(authController.fetchSingleBanner)
 
 
 

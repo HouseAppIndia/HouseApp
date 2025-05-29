@@ -120,9 +120,9 @@ const getAllAgents = catchAsync(async (req, res) => {
   console.log(req.query, "GGGGGG")
   const page = parseInt(req.query.page, 10) || 1;
   const pageSize = parseInt(req.query.pageSize,) || 10;
-  const locationId =req.query.locationId
+  const locationId = req.query.locationId
 
-  const agents = await userService.getAgentsWithDetails(page, pageSize,locationId);
+  const agents = await userService.getAgentsWithDetails(page, pageSize, locationId);
   console.log(agents.data.length)
 
   res.status(httpStatus.OK).json({
@@ -255,9 +255,9 @@ const UpdateProfile = catchAsync(async (req, res) => {
 
 const updateAgentPositions = catchAsync(async (req, res) => {
   console.log(req.body)
-  const { agentId, newPosition,locationId } = req.body;
+  const { agentId, newPosition, locationId } = req.body;
   // Check if agentId and newPosition exist
-  if (agentId === '' || undefined || newPosition === '' || undefined || locationId === '' ) {
+  if (agentId === '' || undefined || newPosition === '' || undefined || locationId === '') {
     return res.status(400).send({
       message: "agentId and newPosition are required fields"
     });
@@ -265,9 +265,9 @@ const updateAgentPositions = catchAsync(async (req, res) => {
 
   // Example: update user by id
   const data = await userService.updateAgentPositionsById(agentId, {
-  position: newPosition,
-  locationId: locationId,
-});
+    position: newPosition,
+    locationId: locationId,
+  });
 
   res.status(200).send({
     message: data,
@@ -300,22 +300,87 @@ const getEmployeeAssignedLocalities = catchAsync(async (req, res) => {
   res.status(201).json({ message: "Locality assigned", result });
 
 })
-const getAllUserReviews=catchAsync(async(req,res)=>{
+const getAllUserReviews = catchAsync(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.pageSize) || 10;
-  const result = await userService.fetchAllUserReviews(page,limit);
-  res.status(201).json({result });
+  const result = await userService.fetchAllUserReviews(page, limit);
+  res.status(201).json({ result });
 })
 
 
-const getAgentInteractionLogs=catchAsync(async(req,res)=>{
-  const range =req.query.range||"today"
+const getAgentInteractionLogs = catchAsync(async (req, res) => {
+  const range = req.query.range || "today"
 
   const result = await userService.fetchInteractionHistory(range);
-  res.status(201).json({result });
+  res.status(201).json({ result });
 })
 
+const saveBanner = catchAsync(async (req, res) => {
+  const { title, link_url, start_time, end_time } = req.body;
 
+  // Check if the image file is uploaded
+  if (!req.file || !req.file.filename) {
+    return res.status(400).json({
+      success: false,
+      message: 'Image file is required',
+    });
+  }
+
+  const image_url = `/images/${req.file.filename}`;
+
+  // Validation for all required fields
+  if (!title || !link_url || !start_time || !end_time) {
+    return res.status(400).json({
+      success: false,
+      message: 'All fields are required: title, link_url, start_time, end_time',
+    });
+  }
+
+  // Save banner logic (replace with actual DB logic)
+  const newBanner = await userService.uploadBannerWithImage({
+    title,
+    image_url,
+    link_url,
+    start_time,
+    end_time,
+  });
+
+  return res.status(201).json({
+    success: true,
+    message: 'Banner created successfully',
+    data: newBanner,
+  });
+});
+
+
+const fetchAllBanners =catchAsync(async(req,res)=>{
+  const Banner =await userService.retrieveAllBanners()
+   return res.status(201).json({
+    success: true,
+    message: 'Banner created successfully',
+    data: Banner,
+  });
+})
+
+const updateBannerInfo =catchAsync(async(req,res)=>{
+  const {id}=req.params.id
+  const updateBanner=await userService.updateExistingBanner(id,req.body)
+    return res.status(201).json({
+    success: true,
+    message: 'Banner Update successfully',
+    data: updateBanner,
+  });
+})
+
+const fetchSingleBanner =catchAsync(async(req,res)=>{
+  const {id}=req.params.id
+  const data =await userService.getSelectedBanner(id)
+  return res.status(201).json({
+    success: true,
+    message: 'Banner Update successfully',
+    data: data,
+  });
+})
 
 module.exports = {
   register,
@@ -346,5 +411,9 @@ module.exports = {
   assignLocality,
   getEmployeeAssignedLocalities,
   getAllUserReviews,
-  getAgentInteractionLogs
+  getAgentInteractionLogs,
+  saveBanner,
+  fetchAllBanners,
+  updateBannerInfo,
+  fetchSingleBanner
 };
