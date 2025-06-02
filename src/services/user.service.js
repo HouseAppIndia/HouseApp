@@ -289,14 +289,15 @@ const fetchInteractionHistory=async(range)=>{
 }
 
 const uploadBannerWithImage = async (
-  title,
+  {title,
   image_url,
   link_url,
   start_time,
-  end_time
+  end_time}
 ) => {
   try {
-    const data = await Banner.create({
+
+    const data = await Banner.createBaner({
       title,
       image_url,
       link_url,

@@ -58,15 +58,20 @@ const login = catchAsync(async (req, res) => {
 
 const UpdateProfile = async (req, res) => {
   try {
-    console.log("helo", req.body)
     const agentId = req.user.userId; // assume karte hain agentId body me aa rahi hai
-    const updateData = req.body;
-    console.log(req)
-    const images = req.file.path
-    console.log(images, "images")
+    const updateData = req.body;   
     if (!agentId) {
       return res.status(400).json({ message: 'Agent ID is required' });
     }
+
+      if (!req.file || !req.file.filename) {
+          return res.status(400).json({
+      success: false,
+      message: 'Image file is required',
+    });
+  }
+
+  const images = `/public/images/${req.file.filename}`;
 
     const success = await agentService.updateProfile(agentId, updateData, images);
     if (success) {

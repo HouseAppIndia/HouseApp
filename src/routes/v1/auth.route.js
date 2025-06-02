@@ -36,7 +36,7 @@ router.route('/position-history-agents').get(authController.getAgentPositionHist
 router.route('/reviews').get(authController.getAllUserReviews)
 router.route('/interactions').get(authController.getAgentInteractionLogs)
 router.route('/banners').post(uploadImage.single("image"),authController.saveBanner).get(authController.fetchAllBanners)
-router.route('/banner/:id').patch(authController.updateBannerInfo).get(authController.fetchSingleBanner)
+router.route('/banners/:id').patch(uploadImage.single("image"),authController.updateBannerInfo).get(authController.fetchSingleBanner)
 
 
 

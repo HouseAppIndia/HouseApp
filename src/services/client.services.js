@@ -1,6 +1,6 @@
 const httpStatus = require('http-status');
 const moment = require('moment');
-const { Client, AgentInteraction } = require('../models');
+const { Client, AgentInteraction, User } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { sendOTP, deleteOtp, deleteAccount } = require('../utils/twilio');
 
@@ -229,6 +229,14 @@ const handleUpdateProfile =(Id, userBody)=>{
   return Client.updateUserById(Id, userBody)
 }
 
+const retrieveActiveBanners =async()=>{
+  try {
+     const data =await Client.getTodayBanners()
+     return data
+  } catch (error) {
+      return error
+  }
+}
 
 module.exports = {
   createUser,
@@ -245,5 +253,6 @@ module.exports = {
   updateReview,
   getReviewById,
   getAgentsByID,
-  handleUpdateProfile
+  handleUpdateProfile,
+  retrieveActiveBanners
 };

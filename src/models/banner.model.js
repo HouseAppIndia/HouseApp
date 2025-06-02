@@ -1,13 +1,14 @@
 const pool = require('../config/db.config');
 
 const Banner = {
-  async createBaner(title, image_url, link_url, start_time, end_time, is_active = true, position = 1, priority = 1) {
+  async createBaner({title, image_url, link_url, start_time, end_time, is_active = true,  priority = 1}) {  
     try {
       const [result] = await pool.execute(
         `INSERT INTO banners (title, image_url, link_url, start_time, end_time, is_active, position, priority)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [title, image_url, link_url, start_time, end_time, is_active, position, priority]
+        [title, image_url, link_url, new Date(start_time),  new Date(end_time),, is_active, "Homepage Top", priority]
       );
+      console.log(result)
       return {
         success: true,
         id: result.insertId,
@@ -81,14 +82,19 @@ const Banner = {
         fields.push('link_url = ?');
         values.push(updateData.link_url);
       }
-      if (updateData.start_time) {
+      if (updateData.is_active) {
+        fields.push('is_active = ?');
+        values.push(updateData.is_active);
+      }
+
+       if (updateData.start_time) {
         fields.push('start_time = ?');
-        values.push(updateData.start_time);
+        values.push(new Date(updateData.start_time));
       }
 
       if (updateData.end_time) {
         fields.push('end_time = ?');
-        values.push(updateData.end_time);
+        values.push(new Date(updateData.end_time));
       }
 
       if (updateData.is_active !== undefined) {
@@ -104,6 +110,11 @@ const Banner = {
       if (updateData.priority !== undefined) {
         fields.push('priority = ?');
         values.push(updateData.priority);
+      }
+
+        if (updateData. image_url !== undefined) {
+        fields.push('image_url = ?');
+        values.push(updateData. image_url);
       }
 
       if (fields.length === 0) {

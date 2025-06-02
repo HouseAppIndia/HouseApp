@@ -29,4 +29,8 @@ router
   .delete(userAuth, userController.deleteReview)
   .get(userAuth, userController.getSingleReview);
 
+router
+.route('/banners/active')
+.get(userController.getActiveBanners)
+
 module.exports = router;

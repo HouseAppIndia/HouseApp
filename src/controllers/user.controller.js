@@ -20,8 +20,6 @@ const handleOtpVerification = catchAsync(async (req, res) => {
     return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
   }
   const data = await ClientService.verifyUserOtp(phone, otp)
-  console.log(data)
-  return
   const tokens = await tokenService.generateAuthTokens(data.user.data);
   res.status(200).json({ message: data.message, tokens });
 })
@@ -66,9 +64,7 @@ const verifyAndDeleteAccount = catchAsync(async (req, res) => {
 
 const getAgentsByLocation = catchAsync(async (req, res) => {
   console.log(req.query.locationId)
-
   if (!req?.query?.locationId) return res.status(httpStatus.BAD_REQUEST).json({ message: "Location is required" });
-
   const user = await ClientService.getAgentsByLocation(req.query.locationId);
   res.status(httpStatus.CREATED).send(user);
 });
@@ -201,6 +197,11 @@ const getAgentsDetails = catchAsync(async (req, res) => {
   res.status(200).send(agentdetail)
 })
 
+const getActiveBanners=catchAsync(async (req,res) => {
+  const banner = await ClientService.retrieveActiveBanners()
+  res.status(200).send(banner)
+})
+
 module.exports = {
   createUser,
   createReview,
@@ -216,5 +217,6 @@ module.exports = {
   updateProfile,
   deleteAccountHandler,
   verifyAndDeleteAccount,
-  getAgentsDetails
+  getAgentsDetails,
+  getActiveBanners
 };

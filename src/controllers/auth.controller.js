@@ -317,8 +317,6 @@ const getAgentInteractionLogs = catchAsync(async (req, res) => {
 
 const saveBanner = catchAsync(async (req, res) => {
   const { title, link_url, start_time, end_time } = req.body;
-
-  // Check if the image file is uploaded
   if (!req.file || !req.file.filename) {
     return res.status(400).json({
       success: false,
@@ -326,7 +324,7 @@ const saveBanner = catchAsync(async (req, res) => {
     });
   }
 
-  const image_url = `/images/${req.file.filename}`;
+  const image_url = `/public/images/${req.file.filename}`;
 
   // Validation for all required fields
   if (!title || !link_url || !start_time || !end_time) {
@@ -335,6 +333,8 @@ const saveBanner = catchAsync(async (req, res) => {
       message: 'All fields are required: title, link_url, start_time, end_time',
     });
   }
+  // console.log(req.file)
+  // console.log(image_url)
 
   // Save banner logic (replace with actual DB logic)
   const newBanner = await userService.uploadBannerWithImage({
@@ -353,28 +353,46 @@ const saveBanner = catchAsync(async (req, res) => {
 });
 
 
-const fetchAllBanners =catchAsync(async(req,res)=>{
-  const Banner =await userService.retrieveAllBanners()
-   return res.status(201).json({
+const fetchAllBanners = catchAsync(async (req, res) => {
+  const Banner = await userService.retrieveAllBanners()
+  return res.status(201).json({
     success: true,
     message: 'Banner created successfully',
     data: Banner,
   });
 })
 
-const updateBannerInfo =catchAsync(async(req,res)=>{
-  const {id}=req.params.id
-  const updateBanner=await userService.updateExistingBanner(id,req.body)
-    return res.status(201).json({
+const updateBannerInfo = catchAsync(async (req, res) => {
+  const { id } = req.params; // ✅ Correct destructuring
+  const { title, link_url, start_time, end_time,is_active } = req.body;
+
+  // Initialize updateData only with non-empty values
+  const updateData = {};
+
+  if (title) updateData.title = title;
+  if (link_url) updateData.link_url = link_url;
+  if (start_time) updateData.start_time = start_time;
+  if (end_time) updateData.end_time = end_time;
+  if(is_active) updateData.end_time = is_active;
+
+  // If image file is uploaded, add its URL
+  if (req.file) {
+    updateData.image_url = `/public/images/${req.file.filename}`;
+  }
+
+  // Pass only filtered updateData to service
+  const updateBanner = await userService.updateExistingBanner(id, updateData);
+
+  return res.status(201).json({
     success: true,
-    message: 'Banner Update successfully',
+    message: 'Banner updated successfully',
     data: updateBanner,
   });
 })
 
-const fetchSingleBanner =catchAsync(async(req,res)=>{
-  const {id}=req.params.id
-  const data =await userService.getSelectedBanner(id)
+const fetchSingleBanner = catchAsync(async (req, res) => {
+  const { id } = req.params.id
+  const data = await userService.getSelectedBanner(id)
   return res.status(201).json({
     success: true,
     message: 'Banner Update successfully',

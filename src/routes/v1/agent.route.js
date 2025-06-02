@@ -4,6 +4,7 @@ const authValidation = require('../../validations/auth.validation');
 const agentController = require('../../controllers/agent.controller');
 const userAuth = require('../../middlewares/auth');
 const upload =require('../../middlewares/upload')
+const uploadImage =require('../../middlewares/UploadBanner')
 
 const router = express.Router();
 router.post('/register', agentController.register);
