@@ -238,6 +238,23 @@ const retrieveActiveBanners =async()=>{
   }
 }
 
+const UpdatedReview= async({
+    id,
+    comment,
+    rating,
+  })=>{
+  try {
+    const updtenow =await Client.updateReview({
+    id,
+    comment,
+    rating,
+  })
+    return updtenow
+  } catch (error) {
+     return error
+  }
+}
+
 module.exports = {
   createUser,
   loginUserWithPhone,
@@ -254,5 +271,6 @@ module.exports = {
   getReviewById,
   getAgentsByID,
   handleUpdateProfile,
-  retrieveActiveBanners
+  retrieveActiveBanners,
+  UpdatedReview
 };

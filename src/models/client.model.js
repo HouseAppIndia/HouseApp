@@ -152,32 +152,74 @@ const Client = {
   },
 
   // Update an existing review
-  async updateReview({ review_id, comment, rating }) {
-    try {
-      const [result] = await pool.execute(
-        `UPDATE user_review SET comment = ?, rating = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?`,
-        [comment, rating, review_id]
-      );
-      if (result.affectedRows === 0) return { success: false, message: 'Review not found.' };
-      await updateAgentAverageRating(review.agent_id);
-      return { success: true, message: 'Review updated successfully.' };
-    } catch (error) {
-      console.error('Error updating review:', error);
+  async updateReview({id, comment, rating }) {
+    console.log({id, comment, rating },"ggggggg")
+     try {
+    // Step 1: Get the review to find the agent_id
+    const [reviewRows] = await pool.execute(
+      `SELECT agent_id FROM user_review WHERE id = ?`,
+      [id]
+    );
+
+    if (reviewRows.length === 0) {
+      return { success: false, message: 'Review not found.' };
+    }
+
+    const agent_id = reviewRows[0].agent_id;
+
+    // Step 2: Update the review
+    const [result] = await pool.execute(
+      `UPDATE user_review SET comment = ?, rating = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      [comment, rating, id]
+    );
+
+    if (result.affectedRows === 0) {
       return { success: false, message: 'Failed to update review.' };
     }
+
+    // Step 3: Update agent's average rating
+    await this.updateAgentAverageRating(agent_id);
+
+    return { success: true, message: 'Review updated successfully.' };
+  } catch (error) {
+    console.error('Error updating review:', error);
+    return { success: false, message: 'Failed to update review.' };
+  }
   },
 
   // Delete a review
   async deleteReview(review_id) {
     try {
-      const [result] = await pool.execute('DELETE FROM user_review WHERE id = ?', [review_id]);
-      if (result.affectedRows === 0) return { success: false, message: 'Review not found.' };
-      await updateAgentAverageRating(review.agent_id);
-      return { success: true, message: 'Review deleted successfully.' };
-    } catch (error) {
-      console.error('Error deleting review:', error);
+    // Step 1: Fetch the agent_id for the review
+    const [reviewRows] = await pool.execute(
+      'SELECT agent_id FROM user_review WHERE id = ?',
+      [review_id]
+    );
+
+    if (reviewRows.length === 0) {
+      return { success: false, message: 'Review not found.' };
+    }
+
+    const agent_id = reviewRows[0].agent_id;
+
+    // Step 2: Delete the review
+    const [result] = await pool.execute(
+      'DELETE FROM user_review WHERE id = ?',
+      [review_id]
+    );
+
+    if (result.affectedRows === 0) {
       return { success: false, message: 'Failed to delete review.' };
     }
+
+    // Step 3: Update the agent's average rating
+    await this.updateAgentAverageRating(agent_id);
+
+    return { success: true, message: 'Review deleted successfully.' };
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    return { success: false, message: 'Failed to delete review.' };
+  }
   },
 
   // Get all reviews
@@ -185,8 +227,6 @@ const Client = {
     try {
       let query = `
         SELECT ur.*, 
-               a.name AS agent_name, a.email AS agent_email, 
-               u.name AS user_name, u.email AS user_email,
                (SELECT COUNT(*) FROM user_review WHERE agent_id = ur.agent_id) AS total_comments
         FROM user_review ur
         JOIN agents a ON ur.agent_id = a.id

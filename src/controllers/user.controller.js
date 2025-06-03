@@ -131,7 +131,7 @@ const createReview = catchAsync(async (req, res) => {
 const updateReview = catchAsync(async (req, res) => {
   const id = req.params.id;  // Get the review ID from the URL parameters
   const { user_id, agent_id, comment, rating } = req.body;  // Get the review data from the request body
-  console.log(id, "review_id, comment, rating")
+  console.log(id, "review_id, comment, rating",comment,rating)
   // Validate input
   if (!comment && !rating) {
     return res.status(400).json({
