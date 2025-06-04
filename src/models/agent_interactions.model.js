@@ -22,6 +22,7 @@ const AgentInteraction = {
 
             return {
                 id: result.insertId,
+                click_type:click_type,
                 message: 'Success',
             };
         } catch (error) {

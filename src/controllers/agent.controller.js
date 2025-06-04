@@ -23,7 +23,7 @@ const handleOtpVerification = catchAsync(async (req, res) => {
   const data = await agentService.verifyOtp(phone, otp)
   console.log(data)
   const tokens = await tokenService.generateAuthTokens(data.user);
-  res.status(200).json({ message: data.message, tokens });
+  res.status(200).json({ message: data.message,agentId:data.user.id,role:data.user.role, tokens });
 })
 
 const regenerateOtp = catchAsync(async (req, res) => {

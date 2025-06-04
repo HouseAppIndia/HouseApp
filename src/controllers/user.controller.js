@@ -20,8 +20,9 @@ const handleOtpVerification = catchAsync(async (req, res) => {
     return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
   }
   const data = await ClientService.verifyUserOtp(phone, otp)
+  console.log(data.user,"hjjj")
   const tokens = await tokenService.generateAuthTokens(data.user.data);
-  res.status(200).json({ message: data.message, tokens });
+  res.status(200).json({ message: data.message,UserId:data.user.data.id,role:data.user.data.role, tokens });
 })
 
 const regenerateOtp = catchAsync(async (req, res) => {
