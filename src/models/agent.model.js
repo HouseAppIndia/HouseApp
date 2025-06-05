@@ -22,19 +22,16 @@ const Agent = {
         }
     },
 
-    async create(name, phone) {
+    async create(name, phone,image_url) {
         try {
-            const [rows] = await pool.execute(`SELECT MAX(position) as maxPos FROM agents`);
-            const nextPosition = (rows[0].maxPos || 0) + 1;
-
             const isPhoneExists = await this.isMobilePhone(phone);
             if (isPhoneExists) {
                 return { success: false, message: 'Phone number already registered' };
             }
 
             const [result] = await pool.execute(
-                `INSERT INTO agents (name, phone, position) VALUES (?, ?, ?)`,
-                [name, phone, nextPosition]
+              `INSERT INTO agents (name, phone, image_url) VALUES (?, ?, ?)`,
+            [name, phone, image_url]
             );
 
             return {

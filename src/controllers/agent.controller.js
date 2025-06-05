@@ -4,21 +4,69 @@ const { authService, agentService, tokenService, agentWorkingLocationService, em
 const { image } = require('../config/cloudinary');
 
 const register = catchAsync(async (req, res) => {
-  const { name, phone } = req.body;
-  if (!/^\d{10}$/.test(phone)) {
-    return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+  let { name, phone } = req.body;
+  console.log('Body:', req.body);
+  console.log('File:', req.file);
+
+  // Trim and validate phone
+  if (!phone) {
+    return res.status(400).json({ message: 'Phone number is required.' });
   }
-  if (!/^[A-Za-z\s]+$/.test(name)) {
+
+  phone = phone.trim();
+  if (!phone.startsWith('+91')) {
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+    }
+    phone = `+91${phone}`;
+  }
+
+  if (!/^\+91\d{10}$/.test(phone)) {
+    return res.status(400).json({ message: 'Invalid phone number format.' });
+  }
+
+  // Validate name
+  if (!name || !/^[A-Za-z\s]+$/.test(name.trim())) {
     return res.status(400).json({ message: 'Name must contain only alphabets and spaces.' });
   }
-  const user = await agentService.createUser(req.body);
-  res.status(httpStatus.CREATED).send({ user: user, });
+
+  // Validate image
+  if (!req.file || !req.file.filename) {
+    return res.status(400).json({
+      success: false,
+      message: 'Image file is required.',
+    });
+  }
+
+  const imagePath = `images/${req.file.filename}`;
+
+  // Prepare payload
+  const userData = {
+    ...req.body,
+    name: name.trim(),
+    phone,
+    image_url: imagePath,
+  };
+
+  // Call service to create agent
+  const user = await agentService.createUser(userData);
+
+  return res.status(201).json({
+    success: true,
+    message: 'Agent registered successfully.',
+    user,
+  });
 });
 
+
+
 const handleOtpVerification = catchAsync(async (req, res) => {
-  const { phone, otp } = req.body;
-  if (!/^\d{10}$/.test(phone)) {
-    return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+  let { phone, otp } = req.body;
+   if (!phone.startsWith('+91')) {
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+    }
+    phone = `+91${phone}`;
   }
   const data = await agentService.verifyOtp(phone, otp)
   console.log(data)
@@ -27,9 +75,12 @@ const handleOtpVerification = catchAsync(async (req, res) => {
 })
 
 const regenerateOtp = catchAsync(async (req, res) => {
-   const { phone} = req.body;
-  if (!/^\d{10}$/.test(phone)) {
-    return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+   let { phone} = req.body;
+    if (!phone.startsWith('+91')) {
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+    }
+    phone = `+91${phone}`;
   }
   const data = await agentService.handleResendOtp(phone)
   res.status(200).json(data);
@@ -51,7 +102,14 @@ const verifyAndDeleteAccount = catchAsync(async (req, res) => {
 })
 
 const login = catchAsync(async (req, res) => {
-  const { phone } = req.body;
+  let { phone } = req.body;
+   phone = phone.trim();
+  if (!phone.startsWith('+91')) {
+    if (!/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+    }
+    phone = `+91${phone}`;
+  }
   const user = await agentService.loginUserWithEmailAndPassword(phone);
   res.send({ user: user });
 });

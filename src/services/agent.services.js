@@ -7,35 +7,37 @@ const moment = require('moment')
 
 const createUser = async (userBody) => {
   try {
-    const name = userBody.name;
-    const PHONE_NUMBER = `+91${userBody.phone}`;
+    const { name, phone, image_url } = userBody;
+    console.log('User Body:', userBody);
 
-    const isPhoneExists = await Agent.isMobilePhone(PHONE_NUMBER);
+    // Check if phone already exists
+    const isPhoneExists = await Agent.isMobilePhone(phone);
     if (isPhoneExists) {
       return { error: true, message: 'Phone number is already registered' };
     }
 
-    const otp = 123456;
+    // Generate OTP and expiry
+    const otp = 123456; // In production, use random generator
     const expiresAt = moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
 
     // Create new agent
-    const user = await Agent.create(name, PHONE_NUMBER);
+    const user = await Agent.create(name, phone, image_url);
     if (!user || !user.id) {
       return { error: true, message: 'Failed to create user' };
     }
 
-    // Save OTP to database
+    // Save OTP in DB
     await Agent.isSaveOtp(user.id, otp, expiresAt);
 
-    // Send OTP via SMS (uncomment in production)
-    // await sendOTP(PHONE_NUMBER, otp);
+    // Send OTP (Uncomment in production)
+    // await sendOTP(phone, otp);
 
     return {
       success: true,
       message: "OTP sent successfully",
       data: {
         agentId: user.id,
-        phone: PHONE_NUMBER
+        phone: phone,
       }
     };
 
@@ -49,38 +51,21 @@ const createUser = async (userBody) => {
 };
 
 
+
 const loginUserWithEmailAndPassword = async (phone) => {
   try {
-    const PHONE_NUMBER = `+91${phone}`;
-
-    // Check if user exists
-    let user = await Agent.getUserByPhone(PHONE_NUMBER);
-
-    // If user does not exist, create one
-    if (!user) {
-      const defaultName = "New Agent"; // or get name from input if available
-      user = await Agent.create(defaultName, PHONE_NUMBER);
-
-      if (!user || !user.id) {
-        return { error: true, message: "Failed to auto-create agent" };
-      }
+    let user = await Agent.getUserByPhone(phone);
+     if (!user || !user.id) {
+      return { error: true, message: "User not found. Please register first." };
     }
-    console.log(user)
-
-    // Generate OTP and expiry
     const otp = 123456;
     const expiresAt = moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
-
-    // Save OTP to DB
     await Agent.isSaveOtp(user.id, otp, expiresAt);
-
     return {
       success: true,
       message: "Login OTP sent successfully",
       data: {
-        agentId: user.id,
         phone: user.phone,
-        // otp // optional: return for development
       }
     };
 
@@ -95,8 +80,7 @@ const loginUserWithEmailAndPassword = async (phone) => {
 
 const verifyOtp = async (phone, otp) => {
   try {
-    const PHONE_NUMBER = `+91${phone}`;
-    const user = await Agent.getUserByPhone(PHONE_NUMBER);
+    const user = await Agent.getUserByPhone(phone);
 
     // Check if user exists
     if (!user || !user.id) {
@@ -132,8 +116,7 @@ const verifyOtp = async (phone, otp) => {
 
 const handleResendOtp = async (phone) => {
   try {
-    const PHONE_NUMBER = `+91${phone}`;
-    const user = await Agent.getUserByPhone(PHONE_NUMBER);
+    const user = await Agent.getUserByPhone(phone);
     if (user.error) {
       return { error: "User not found" };
     }
