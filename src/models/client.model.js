@@ -223,33 +223,44 @@ const Client = {
   },
 
   // Get all reviews
-  async getAllReviews({ agent_id, user_id } = {}) {
-    try {
-      let query = `
-        SELECT ur.*, 
-               (SELECT COUNT(*) FROM user_review WHERE agent_id = ur.agent_id) AS total_comments
-        FROM user_review ur
-        JOIN agents a ON ur.agent_id = a.id
-        JOIN user u ON ur.user_id = u.id
-        WHERE 1=1
-      `;
-      const params = [];
-      if (agent_id) {
-        query += ' AND ur.agent_id = ?';
-        params.push(agent_id);
-      }
-      if (user_id) {
-        query += ' AND ur.user_id = ?';
-        params.push(user_id);
-      }
+async getAllReviews({ agent_id } = {}) {
+  try {
+    const query = `
+      SELECT ur.*, 
+             u.name AS user_name,
+             a.name AS agent_name,
+             (SELECT COUNT(*) FROM user_review WHERE agent_id = ur.agent_id) AS total_comments
+      FROM user_review ur
+      JOIN agents a ON ur.agent_id = a.id
+      JOIN user u ON ur.user_id = u.id
+      WHERE ur.agent_id = ?
+    `;
 
-      const [rows] = await pool.execute(query, params);
-      return { success: true, data: rows };
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-      return { success: false, message: 'Failed to fetch reviews.', data: [] };
+    const [rows] = await pool.execute(query, [agent_id]);
+
+    if (rows.length === 0) {
+      return {
+        success: true,
+        data: [],
+        message: 'No reviews found for this agent.',
+      };
     }
-  },
+
+    return {
+      success: true,
+      data: rows,
+      message: 'Reviews fetched successfully.',
+    };
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    return {
+      success: false,
+      data: [],
+      message: 'Failed to fetch reviews.',
+    };
+  }
+}
+,
 
   // Get single review by ID
   async getReviewById({ review_id }) {

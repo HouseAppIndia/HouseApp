@@ -172,12 +172,19 @@ const updateReview = catchAsync(async (req, res) => {
 
 const getAllReviews = catchAsync(async (req, res) => {
   const { agent_id } = req.body;
-  const review = await ClientService.getAllReviews({
-    agent_id,
-  });
 
-  res.status(200).send(review);
+  if (!agent_id) {
+    return res.status(400).json({
+      success: false,
+      message: 'Agent ID is required',
+    });
+  }
+
+  const review = await ClientService.getAllReviews({ agent_id });
+
+  res.status(200).json(review);
 });
+
 
 const deleteReview = catchAsync(async (req, res) => {
   await userService.deleteUserById(req.params.userId);
