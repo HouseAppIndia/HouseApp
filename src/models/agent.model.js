@@ -1,5 +1,6 @@
 const pool = require('../config/db.config');
 const bcrypt = require('bcryptjs');
+const { json } = require('express');
 const moment = require('moment');
 
 const Agent = {
@@ -102,6 +103,11 @@ const Agent = {
             if (updateData.languages_spoken) {
                 fields.push('languages_spoken = ?');
                 values.push(JSON.stringify(updateData.languages_spoken));
+            }
+
+            if(updateData.description){
+                fields.push('description=?')
+                values.push(json.stringify(updateData.description))
             }
 
             if (fields.length === 0) {
