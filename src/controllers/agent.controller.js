@@ -62,7 +62,7 @@ const register = catchAsync(async (req, res) => {
 
 const handleOtpVerification = catchAsync(async (req, res) => {
   let { phone, otp } = req.body;
-   if (!phone.startsWith('+91')) {
+  if (!phone.startsWith('+91')) {
     if (!/^\d{10}$/.test(phone)) {
       return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
     }
@@ -71,12 +71,12 @@ const handleOtpVerification = catchAsync(async (req, res) => {
   const data = await agentService.verifyOtp(phone, otp)
   console.log(data)
   const tokens = await tokenService.generateAuthTokens(data.user);
-  res.status(200).json({ message: data.message,agentId:data.user.id,role:data.user.role, tokens });
+  res.status(200).json({ message: data.message, agentId: data.user.id, role: data.user.role, tokens });
 })
 
 const regenerateOtp = catchAsync(async (req, res) => {
-   let { phone} = req.body;
-    if (!phone.startsWith('+91')) {
+  let { phone } = req.body;
+  if (!phone.startsWith('+91')) {
     if (!/^\d{10}$/.test(phone)) {
       return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
     }
@@ -103,7 +103,7 @@ const verifyAndDeleteAccount = catchAsync(async (req, res) => {
 
 const login = catchAsync(async (req, res) => {
   let { phone } = req.body;
-   phone = phone.trim();
+  phone = phone.trim();
   if (!phone.startsWith('+91')) {
     if (!/^\d{10}$/.test(phone)) {
       return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
@@ -117,19 +117,19 @@ const login = catchAsync(async (req, res) => {
 const UpdateProfile = async (req, res) => {
   try {
     const agentId = req.user.userId; // assume karte hain agentId body me aa rahi hai
-    const updateData = req.body;   
+    const updateData = req.body;
     if (!agentId) {
       return res.status(400).json({ message: 'Agent ID is required' });
     }
 
-      if (!req.file || !req.file.filename) {
-          return res.status(400).json({
-      success: false,
-      message: 'Image file is required',
-    });
-  }
+    if (!req.file || !req.file.filename) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image file is required',
+      });
+    }
 
-  const images = `/public/images/${req.file.filename}`;
+    const images = `/public/images/${req.file.filename}`;
 
     const success = await agentService.updateProfile(agentId, updateData, images);
     if (success) {

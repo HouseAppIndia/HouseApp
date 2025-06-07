@@ -60,6 +60,7 @@ async function createAgentTable() {
       rating DECIMAL(3,2),
       role VARCHAR(50) DEFAULT 'agent',
       verified BOOLEAN DEFAULT FALSE,
+      description TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     );

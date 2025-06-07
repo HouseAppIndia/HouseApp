@@ -111,6 +111,44 @@ const localities = {
       return { error: error.message };
     }
   },
+async searchLocalitiesByName(searchTerm) {
+   try {
+    if (!searchTerm || searchTerm.trim() === '') {
+      console.log('Search term is empty');
+      return [];
+    }
+
+    // Sanitize the search term: remove quotes and whitespace
+    const cleanSearchTerm = searchTerm.replace(/^"+|"+$/g, '').trim();
+     const query = `
+      SELECT
+        l.id,
+        l.name AS locality_name,
+        c.name AS city_name,
+        a.name AS area_name
+      FROM
+        localities l
+      INNER JOIN
+        cities c ON l.city_id = c.id
+      LEFT JOIN
+        areas a ON l.area_id = a.id
+      WHERE
+        l.name LIKE ?;
+    `;
+
+    const param = `${cleanSearchTerm}%`;
+
+    console.log('🔍 Running query with param:', param);
+
+    const [rows] = await pool.execute(query, [param]);
+    console.log('Result:', rows);
+    return rows;
+  } catch (err) {
+    console.error('Error in searchLocalitiesByName:', err.message);
+    return [];
+  }
+}
+
 };
 
 module.exports = localities;

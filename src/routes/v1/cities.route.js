@@ -39,6 +39,8 @@ router.route('/setlocalities/limit')
 
 router.route('/setlocalities/limit/:id')
   .put(citiesController.updateLocalityLimit);
+ 
+router.route('/search/localities').get(citiesController.searchLocalitiesByPrefix)  
 
 
 module.exports = router;

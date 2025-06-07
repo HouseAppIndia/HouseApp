@@ -259,8 +259,7 @@ async getAllReviews({ agent_id } = {}) {
       message: 'Failed to fetch reviews.',
     };
   }
-}
-,
+},
 
   // Get single review by ID
   async getReviewById({ review_id }) {

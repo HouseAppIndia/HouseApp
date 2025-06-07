@@ -1,0 +1,1 @@
+const { AboutUs, PrivacyPolicies, TermsConditions } =require('../models/staticContent.model')

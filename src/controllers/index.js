@@ -3,3 +3,4 @@ module.exports.userController = require('./user.controller');
 module.exports.agentController =require('./agent.controller')
 module.exports.employeeController=require('./employee.controller')
 module.exports.citiesController =require('./cities.controller')
+module.exports.StaticContentController =require('./staticContent.controller')

@@ -456,69 +456,69 @@ const User = {
   },
 
   async updateAgentRanking(agentId, locationId, newRanking) {
-  const connection = await pool.getConnection();
-  try {
-    await connection.beginTransaction();
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
 
-    // 🔁 Normalize rankings first
-    await connection.query(`SET @r = 0`);
-    await connection.execute(
-      `UPDATE agent_working_locations
+      // 🔁 Normalize rankings first
+      await connection.query(`SET @r = 0`);
+      await connection.execute(
+        `UPDATE agent_working_locations
        SET ranking = (@r := @r + 1)
        WHERE location_id = ?
        ORDER BY ranking ASC`,
-      [locationId]
-    );
+        [locationId]
+      );
 
-    // ✅ Get current ranking of the agent
-    const [rows] = await connection.execute(
-      `SELECT ranking FROM agent_working_locations 
+      // ✅ Get current ranking of the agent
+      const [rows] = await connection.execute(
+        `SELECT ranking FROM agent_working_locations 
        WHERE agent_id = ? AND location_id = ?`,
-      [agentId, locationId]
-    );
-    if (rows.length === 0) {
-      throw new Error('Agent not found in location');
-    }
-    const currentRanking = rows[0].ranking;
+        [agentId, locationId]
+      );
+      if (rows.length === 0) {
+        throw new Error('Agent not found in location');
+      }
+      const currentRanking = rows[0].ranking;
 
-    // 🔁 Shift other agents' rankings
-    if (newRanking < currentRanking) {
-      const [res] = await connection.execute(
-        `UPDATE agent_working_locations 
+      // 🔁 Shift other agents' rankings
+      if (newRanking < currentRanking) {
+        const [res] = await connection.execute(
+          `UPDATE agent_working_locations 
          SET ranking = ranking + 1 
          WHERE location_id = ? AND ranking >= ? AND ranking < ?`,
-        [locationId, newRanking, currentRanking]
-      );
-      console.log("↑ Ranking shift up:", res.affectedRows);
-    } else if (newRanking > currentRanking) {
-      const [res] = await connection.execute(
-        `UPDATE agent_working_locations 
+          [locationId, newRanking, currentRanking]
+        );
+        console.log("↑ Ranking shift up:", res.affectedRows);
+      } else if (newRanking > currentRanking) {
+        const [res] = await connection.execute(
+          `UPDATE agent_working_locations 
          SET ranking = ranking - 1 
          WHERE location_id = ? AND ranking <= ? AND ranking > ?`,
-        [locationId, newRanking, currentRanking]
-      );
-      console.log("↓ Ranking shift down:", res.affectedRows);
-    }
+          [locationId, newRanking, currentRanking]
+        );
+        console.log("↓ Ranking shift down:", res.affectedRows);
+      }
 
-    // 🎯 Update agent's new rank
-    await connection.execute(
-      `UPDATE agent_working_locations 
+      // 🎯 Update agent's new rank
+      await connection.execute(
+        `UPDATE agent_working_locations 
        SET ranking = ? 
        WHERE agent_id = ? AND location_id = ?`,
-      [newRanking, agentId, locationId]
-    );
+        [newRanking, agentId, locationId]
+      );
 
-    await connection.commit();
-    return { message: "Ranking updated successfully" };
-  } catch (error) {
-    await connection.rollback();
-    console.error("Error during updateAgentRanking:", error);
-    throw new Error("Failed to update agent ranking");
-  } finally {
-    connection.release();
+      await connection.commit();
+      return { message: "Ranking updated successfully" };
+    } catch (error) {
+      await connection.rollback();
+      console.error("Error during updateAgentRanking:", error);
+      throw new Error("Failed to update agent ranking");
+    } finally {
+      connection.release();
+    }
   }
-}
-,
+  ,
   async getAgentsWithDetails(page, pageSize, locationId) {
     console.log(page, pageSize, locationId, "jefj")
     try {
@@ -544,13 +544,15 @@ const User = {
           a.languages_spoken,
           oa.address AS office_address,
           GROUP_CONCAT(DISTINCT l.name ORDER BY awl.ranking SEPARATOR ', ') AS working_locations,
-          GROUP_CONCAT(DISTINCT awl.ranking ORDER BY awl.ranking SEPARATOR ', ') AS rankings
+          GROUP_CONCAT(DISTINCT awl.ranking ORDER BY awl.ranking SEPARATOR ', ') AS rankings,
+           MIN(awl.ranking) AS min_ranking
         FROM agents a
         LEFT JOIN office_address oa ON a.id = oa.agent_id
         LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id 
         LEFT JOIN localities l ON awl.location_id = l.id
         GROUP BY a.id
         ORDER BY a.id
+        ORDER BY min_ranking ASC
   LIMIT ${parsedPageSize} OFFSET ${offset};
 `;
 

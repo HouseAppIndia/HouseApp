@@ -66,6 +66,20 @@ const updateLocalityLimit = async (id, { locality_id, data_limit }) => {
   return data;
 };
 
+
+const fetchFilteredLocalities =async(name)=>{
+   try {
+    const data =await localities.searchLocalitiesByName(name)
+    if (!data || data.length === 0) {
+       return { success: true, data: null }
+     }
+   return  data
+
+   } catch (error) {
+      return error
+   }
+}
+
 module.exports = {
   getAllLocalities,
   getlocalitiesById,
@@ -75,4 +89,5 @@ module.exports = {
   addLocalityLimit,
   getAllLocalityLimits,
   updateLocalityLimit,
+  fetchFilteredLocalities
 };

@@ -218,6 +218,17 @@ const updateLocalityLimit = catchAsync(async (req, res) => {
     });
 });
 
+const searchLocalitiesByPrefix =catchAsync(async(req,res)=>{
+    const { name } = req.query;
+
+  if (!name) {
+    return res.status(400).json({ message: 'Query parameter "name" is required.' });
+  }
+
+  const results = await localityService.fetchFilteredLocalities(name);
+  res.status(200).json({ success: true, data: results });
+})
+
 
 /* ------------------------------- Exports ----------------------------------- */
 
@@ -246,5 +257,6 @@ module.exports = {
   // Localities-Limit
     setLocalityLimit,
     getLocalityLimit,
-    updateLocalityLimit
+    updateLocalityLimit,
+    searchLocalitiesByPrefix
 };
