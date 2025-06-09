@@ -9,4 +9,6 @@ module.exports.notificationService=require('./notification.services')
 module.exports.cityService =require('./cities.services')
 module.exports.areaService =require('./area.services')
 module.exports.localityService=require('./localities.services')
+module.exports.BookMarkService=require('./bookmark.service')
+
 

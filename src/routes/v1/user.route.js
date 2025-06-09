@@ -3,6 +3,7 @@ const userAuth = require('../../middlewares/auth');
 const validate = require('../../middlewares/validate');
 const userValidation = require('../../validations/user.validation');
 const userController = require('../../controllers/user.controller');
+const bookmarkController =require('../../controllers/bookmark.controller')
 
 const router = express.Router();
 
@@ -32,5 +33,10 @@ router
 router
 .route('/banners/active')
 .get(userController.getActiveBanners)
+
+router.get('/bookmark', userAuth, bookmarkController.getBookmarks);
+router.post('/bookmark', userAuth, bookmarkController.addBookmark);
+router.delete('/bookmark', userAuth, bookmarkController.removeBookmark);
+
 
 module.exports = router;
