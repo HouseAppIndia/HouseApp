@@ -171,7 +171,9 @@ const updateReview = catchAsync(async (req, res) => {
 
 
 const getAllReviews = catchAsync(async (req, res) => {
-  const { agent_id } = req.body;
+  console.log(req.query,"chh")
+  const { agent_id } = req.query;
+  console.log(agent_id)
 
   if (!agent_id) {
     return res.status(400).json({
