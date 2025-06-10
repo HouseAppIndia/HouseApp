@@ -79,8 +79,8 @@ const Client = {
   },
 
   // Get agents working at a location
-  async getAgentsByLocation(locationId, limit, offset = 0) {
-    console.log(locationId, limit, offset = 0)
+  async getAgentsByLocation(locationId, userId,limit, offset = 0) {
+    console.log(locationId,userId, limit, offset = 0)
     try {
       if (!locationId) { return { success: false, message: 'Location ID is required.', data: [] }; }
       const [rows] = await pool.execute(`
@@ -95,7 +95,12 @@ const Client = {
         a.rating,
         a.languages_spoken,
         oa.address AS office_address,
-        MIN(awl.ranking) AS min_ranking
+        MIN(awl.ranking) AS min_ranking,
+        (
+          SELECT COUNT(*) > 0
+          FROM bookmarks b
+          WHERE b.user_id = ${userId} AND b.agent_id = a.id
+        ) AS isBookmarked
       FROM agents a
       LEFT JOIN office_address oa ON a.id = oa.agent_id
       LEFT JOIN agent_working_locations awl

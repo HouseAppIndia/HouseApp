@@ -65,8 +65,9 @@ const verifyAndDeleteAccount = catchAsync(async (req, res) => {
 
 const getAgentsByLocation = catchAsync(async (req, res) => {
   console.log(req.query.locationId)
+   const userId = req.user.userId;
   if (!req?.query?.locationId) return res.status(httpStatus.BAD_REQUEST).json({ message: "Location is required" });
-  const user = await ClientService.getAgentsByLocation(req.query.locationId);
+  const user = await ClientService.getAgentsByLocation(req.query.locationId,userId);
   res.status(httpStatus.CREATED).send(user);
 });
 
