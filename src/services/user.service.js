@@ -92,9 +92,9 @@ const isPasswordMatch = async (password, hashedPassword) => {
   }
 };
 
-const getAgentsWithDetails = async (page, pageSize,locationId) => {
+const getAgentsWithDetails = async (page, pageSize,locationId,area_id,city_id) => {
   try {
-    return await User.getAgentsWithDetails(page, pageSize,locationId);
+    return await User.getAgentsWithDetails(page, pageSize,locationId,area_id,city_id);
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to get agent details');
   }
@@ -293,7 +293,10 @@ const uploadBannerWithImage = async (
   image_url,
   link_url,
   start_time,
-  end_time}
+  end_time,
+  city_id,
+  position
+}
 ) => {
   try {
 
@@ -303,6 +306,8 @@ const uploadBannerWithImage = async (
       link_url,
       start_time,
       end_time,
+      city_id,
+      position
     });
     
     return {

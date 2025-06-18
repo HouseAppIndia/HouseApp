@@ -120,9 +120,12 @@ const getAllAgents = catchAsync(async (req, res) => {
   console.log(req.query, "GGGGGG")
   const page = parseInt(req.query.page, 10) || 1;
   const pageSize = parseInt(req.query.pageSize,) || 10;
-  const locationId = req.query.locationId
+ const area_id = req.query.area_id ? req.query.area_id==="null"?null:req.query.area_id : null;
+const city_id = req.query.city_id ? req.query.city_id==="null"?null:req.query.city_id : null;
+const locationId = req.query.locationId ? req.query.locationId=="null"?null:req.query.locationId : null;
+ console.log(city_id,"city_id")
 
-  const agents = await userService.getAgentsWithDetails(page, pageSize, locationId);
+  const agents = await userService.getAgentsWithDetails(page, pageSize, locationId,area_id,city_id);
   console.log(agents.data.length)
 
   res.status(httpStatus.OK).json({
@@ -316,7 +319,8 @@ const getAgentInteractionLogs = catchAsync(async (req, res) => {
 })
 
 const saveBanner = catchAsync(async (req, res) => {
-  const { title, link_url, start_time, end_time } = req.body;
+ let { title, link_url, start_time, end_time, city_id, position } = req.body;
+  console.log(title, link_url, start_time, end_time, city_id, position )
   if (!req.file || !req.file.filename) {
     return res.status(400).json({
       success: false,
@@ -324,10 +328,10 @@ const saveBanner = catchAsync(async (req, res) => {
     });
   }
 
-  const image_url = `/public/images/${req.file.filename}`;
+  const image_url = `/image/${req.file.filename}`;
 
   // Validation for all required fields
-  if (!title || !link_url || !start_time || !end_time) {
+  if (!title || !link_url || !start_time || !end_time||!city_id||!position) {
     return res.status(400).json({
       success: false,
       message: 'All fields are required: title, link_url, start_time, end_time',
@@ -343,6 +347,8 @@ const saveBanner = catchAsync(async (req, res) => {
     link_url,
     start_time,
     end_time,
+    city_id,
+    position
   });
 
   return res.status(201).json({
@@ -364,7 +370,7 @@ const fetchAllBanners = catchAsync(async (req, res) => {
 
 const updateBannerInfo = catchAsync(async (req, res) => {
   const { id } = req.params; // ✅ Correct destructuring
-  const { title, link_url, start_time, end_time,is_active } = req.body;
+  let { title, link_url, start_time, end_time, city_id, position } = req.body;
 
   // Initialize updateData only with non-empty values
   const updateData = {};
@@ -374,10 +380,12 @@ const updateBannerInfo = catchAsync(async (req, res) => {
   if (start_time) updateData.start_time = start_time;
   if (end_time) updateData.end_time = end_time;
   if(is_active) updateData.end_time = is_active;
+  if(city_id) updateData.city_id=city_id
+  if(position) updateData.position=position
 
   // If image file is uploaded, add its URL
   if (req.file) {
-    updateData.image_url = `/public/images/${req.file.filename}`;
+    updateData.image_url = `/public/image/${req.file.filename}`;
   }
 
   // Pass only filtered updateData to service

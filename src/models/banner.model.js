@@ -1,12 +1,12 @@
 const pool = require('../config/db.config');
 
 const Banner = {
-  async createBaner({title, image_url, link_url, start_time, end_time, is_active = true,  priority = 1}) {  
+  async createBaner({title, image_url, link_url, start_time, end_time, is_active = true,position,  priority = 1,city_id}) {  
     try {
       const [result] = await pool.execute(
-        `INSERT INTO banners (title, image_url, link_url, start_time, end_time, is_active, position, priority)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [title, image_url, link_url, new Date(start_time),  new Date(end_time),, is_active, "Homepage Top", priority]
+        `INSERT INTO banners (title, image_url, link_url, start_time, end_time, is_active, position, priority,city_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)`,
+        [title, image_url, link_url, new Date(start_time),  new Date(end_time),, is_active, position, "Mobile",city_id]
       );
       console.log(result)
       return {
@@ -25,17 +25,34 @@ const Banner = {
   },
 
   async getAllBanners() {
-    try {
-      const [banners] = await pool.execute('SELECT * FROM banners');
-      return { success: true, data: banners };
-    } catch (error) {
-      console.error('Error in getAllBanners:', error);
-      return {
-        success: false,
-        message: 'Failed to get banners',
-        error: error.message,
-      };
-    }
+     try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        b.id AS banner_id,
+        b.title,
+        b.image_url,
+        b.link_url,
+        b.start_time,
+        b.end_time,
+        b.is_active,
+        b.position,
+        b.priority,
+        b.city_id,
+        c.name AS city_name,
+        b.created_at,
+        b.updated_at
+      FROM 
+        banners b
+      JOIN 
+        cities c ON b.city_id = c.id
+      ORDER BY b.created_at DESC
+    `);
+
+    return { success: true, data: rows };
+  } catch (error) {
+    console.error('Error fetching banners with cities:', error);
+    return { success: false, message: 'Error fetching banners', error };
+  }
   },
 
   async getBannerById(id) {
@@ -114,12 +131,22 @@ const Banner = {
 
         if (updateData. image_url !== undefined) {
         fields.push('image_url = ?');
-        values.push(updateData. image_url);
+        values.push(updateData.image_url);
+      }
+      if(updateData.city_id){
+        fields.push('city_id=?')
+        values.push(updateData.city_id)
+      }
+      if(updateData.position){
+        fields.push('position=?')
+        values.push(updateData.position)
       }
 
       if (fields.length === 0) {
         return { success: false, message: 'No fields to update' };
       }
+
+
 
       fields.push('updated_at = CURRENT_TIMESTAMP');
       values.push(id);

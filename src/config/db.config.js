@@ -61,12 +61,28 @@ async function createAgentTable() {
       role VARCHAR(50) DEFAULT 'agent',
       verified BOOLEAN DEFAULT FALSE,
       description TEXT,
+      email VARCHAR(20) UNIQUE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     );
   `;
   await pool.execute(query);
 }
+
+async function createAgentImagesTable() {
+  const query = `
+    CREATE TABLE IF NOT EXISTS agent_images (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      agent_id INT NOT NULL,
+      image_url VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+    );
+  `;
+  await pool.execute(query);
+}
+
+
 
 async function createTokensTable() {
   const query = `
@@ -110,15 +126,20 @@ async function createAgentWorkingLocationsTable() {
       id INT AUTO_INCREMENT PRIMARY KEY,
       agent_id INT NOT NULL,
       location_id INT NOT NULL,
+      city_id INT,
+      area_id INT DEFAULT NULL,
       is_approved BOOLEAN DEFAULT FALSE,
       ranking INT DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE,
-      FOREIGN KEY (location_id) REFERENCES localities(id) ON DELETE CASCADE
+      FOREIGN KEY (location_id) REFERENCES localities(id) ON DELETE CASCADE,
+      FOREIGN KEY (city_id) REFERENCES cities(id) ON DELETE CASCADE,
+      FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL
     );
   `;
   await pool.execute(query);
 }
+
 
 async function createBannersTable() {
   const query = `
@@ -131,13 +152,16 @@ async function createBannersTable() {
       end_time DATETIME NOT NULL,
       is_active BOOLEAN DEFAULT TRUE,
       position VARCHAR(50),
-      priority INT DEFAULT 0,
+      priority VARCHAR(50),
+      city_id INT NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (city_id) REFERENCES cities(id) ON DELETE CASCADE
     );
   `;
   await pool.execute(query);
 }
+
 
 async function createUserReviewTable() {
   const query = `
@@ -154,6 +178,20 @@ async function createUserReviewTable() {
   `;
   await pool.execute(query);
 }
+
+async function createReviewImagesTable() {
+  const query = `
+    CREATE TABLE IF NOT EXISTS review_images (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      review_id INT NOT NULL,
+      image_url VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (review_id) REFERENCES user_review(id) ON DELETE CASCADE
+    );
+  `;
+  await pool.execute(query);
+}
+
 
 async function createOtpTable() {
   const query = `
@@ -347,6 +385,7 @@ async function initializeDatabase() {
     await ensureEmployeesTable();
     await createUserTable();
     await createAgentTable();
+    await createAgentImagesTable()
     await AddCity();
     await AddAreas();
     await localities();
@@ -357,6 +396,7 @@ async function initializeDatabase() {
     await createAgentInteractionsTable();
     await createBannersTable();
     await createUserReviewTable();
+    await createReviewImagesTable()
     await createOtpTable();
     await createOfficeAddressTable();
     await addEntityColumn();
@@ -364,6 +404,7 @@ async function initializeDatabase() {
     await AgentHistory();
     await createSponsorshipTable();
     await createBookmarksTable()
+
 
     console.log("✅ All tables created successfully!");
   } catch (err) {

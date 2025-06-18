@@ -109,11 +109,18 @@ const createReview = catchAsync(async (req, res) => {
       message: 'agent_id and rating are required',
     });
   }
+
+ // Store all image paths
+    const imagePaths = req.files.map(file => `images/${file.filename}`);
+
+    // Save as array or comma-separated string, depending on your DB design
+
   const review = await ClientService.createReview({
     user_id,
     agent_id,
     comment,
     rating,
+    imagePaths
   });
 
   res.status(201).json({

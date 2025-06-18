@@ -7,13 +7,13 @@ const upload =require('../../middlewares/upload')
 const uploadImage =require('../../middlewares/UploadBanner')
 
 const router = express.Router();
-router.post('/register',uploadImage.single('image'), agentController.register);
+router.post('/register', agentController.register);
 router.post('/login', agentController.login);
 router.post('/verify-otp',agentController.handleOtpVerification)
 router.post('/resent-otp',agentController.regenerateOtp)
 router.delete('/delete-account', userAuth, agentController.deleteAccountHandler);
 router.post('/verify-delete-account', userAuth, agentController.verifyAndDeleteAccount);
-router.patch('/profile-update', userAuth, uploadImage.single('image'),agentController.UpdateProfile)
+router.patch('/profile-update', userAuth, uploadImage.array('image'),agentController.UpdateProfile)
 router.post('/working-locations',userAuth,agentController.AddWorkingLocation)
 router.post('/office-address',userAuth, agentController.createOrUpdateAddress);
 module.exports = router;

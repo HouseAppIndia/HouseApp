@@ -519,100 +519,125 @@ const User = {
     }
   }
   ,
-  async getAgentsWithDetails(page, pageSize, locationId) {
-    console.log(page, pageSize, locationId, "jefj")
-    try {
-      const parsedPage = parseInt(page, 10);
-      const parsedPageSize = parseInt(pageSize, 10);
-      const offset = (parsedPage - 1) * parsedPageSize;
+async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id) {
+  console.log(page, pageSize, locationId, "jefj");
 
-      let dataQuery;
-      let countQuery;
-      if (locationId == "null") {
-        // No location filter
-        console.log("hello")
-        dataQuery = `
- SELECT 
+  try {
+    const parsedPage = parseInt(page, 10);
+    const parsedPageSize = parseInt(pageSize, 10);
+    const offset = (parsedPage - 1) * parsedPageSize;
+
+    let dataQuery = "";
+    let countQuery = "";
+    let queryParams = [];
+    let countParams = [];
+    console.log(city_id,area_id,locationId)
+    if (city_id===null &&area_id===null &&locationId === null) {
+      console.log("No location filter");
+
+      dataQuery = `
+        SELECT 
           a.id AS agent_id,
+          a.email,
           a.name,
           a.phone,
           a.status,
           a.whatsapp_number,
           a.experience_years,
-          a.image_url,
           a.rating,
           a.languages_spoken,
           oa.address AS office_address,
-          GROUP_CONCAT(DISTINCT l.name ORDER BY awl.ranking SEPARATOR ', ') AS working_locations,
-          GROUP_CONCAT(DISTINCT awl.ranking ORDER BY awl.ranking SEPARATOR ', ') AS rankings,
-           MIN(awl.ranking) AS min_ranking
+          COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls,
+          GROUP_CONCAT(DISTINCT l.name SEPARATOR ', ') AS working_locations
         FROM agents a
         LEFT JOIN office_address oa ON a.id = oa.agent_id
         LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id 
         LEFT JOIN localities l ON awl.location_id = l.id
+        LEFT JOIN agent_images img ON a.id = img.agent_id
         GROUP BY a.id
-        ORDER BY a.id
-        ORDER BY min_ranking ASC
-  LIMIT ${parsedPageSize} OFFSET ${offset};
-`;
-
-        countQuery = `SELECT COUNT(*) AS total FROM agents;`;
-      } else {
-        // Filter by locationId
-        console.log("else")
-        dataQuery = `
-  SELECT 
-    a.id AS agent_id,
-    a.name,
-    a.phone,
-    a.status,
-    a.whatsapp_number,
-    a.experience_years,
-    a.image_url,
-    a.rating,
-    a.languages_spoken,
-    oa.address AS office_address,
-    GROUP_CONCAT(DISTINCT l.name ORDER BY awl.ranking SEPARATOR ', ') AS working_locations,
-    GROUP_CONCAT(DISTINCT awl.ranking ORDER BY awl.ranking SEPARATOR ', ') AS rankings,
-    MIN(awl.ranking) AS min_ranking
-  FROM agents a
-  LEFT JOIN office_address oa ON a.id = oa.agent_id
-  LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id
-  LEFT JOIN localities l ON awl.location_id = l.id
-  WHERE awl.location_id = ${locationId}
-  GROUP BY a.id
-  ORDER BY min_ranking ASC
-  LIMIT ${parsedPageSize} OFFSET ${offset};
-`;
-
-
-        countQuery = `
-        SELECT COUNT(DISTINCT a.id) AS total
-        FROM agents a
-        JOIN agent_working_locations awl ON a.id = awl.agent_id
-        WHERE awl.location_id = ${locationId};
+        LIMIT ${parsedPageSize} OFFSET ${offset};
       `;
+      countQuery = `SELECT COUNT(*) AS total FROM agents;`;
+    } else {
+      console.log("With location/area/city filter");
+      let whereClause = '';
+
+      if (locationId) {
+        whereClause = 'WHERE awl.location_id = ?';
+        queryParams.push(parseInt(locationId));
+        countParams.push(parseInt(locationId));
+      } else if (area_id) {
+        whereClause = 'WHERE l.area_id = ?';
+        queryParams.push(parseInt(area_id))
+        countParams.push(parseInt(area_id));
+      } else if (city_id) {
+        whereClause = 'WHERE l.city_id = ?';
+      queryParams.push(parseInt(city_id));
+        countParams.push(parseInt(city_id));
       }
 
-      const [rows] = await pool.execute(dataQuery);
-      const [countResult] = await pool.execute(countQuery);
-      const total = countResult[0].total;
+      dataQuery = `
+        SELECT 
+          a.id AS agent_id,
+          a.name,
+          a.email,
+          a.phone,
+          a.status,
+          a.whatsapp_number,
+          a.experience_years,
+          a.rating,
+          a.languages_spoken,
+          oa.address AS office_address,
+          COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls,
+          GROUP_CONCAT(DISTINCT l.name ORDER BY awl.ranking SEPARATOR ', ') AS working_locations,
+          GROUP_CONCAT(DISTINCT awl.ranking ORDER BY awl.ranking SEPARATOR ', ') AS rankings,
+          MIN(awl.ranking) AS min_ranking
+        FROM agents a
+        LEFT JOIN office_address oa ON a.id = oa.agent_id
+        LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id
+        LEFT JOIN localities l ON awl.location_id = l.id
+        LEFT JOIN agent_images img ON a.id = img.agent_id
+        ${whereClause}
+        GROUP BY a.id
+        ORDER BY min_ranking ASC
+        LIMIT ${parsedPageSize} OFFSET ${offset};
+      `;
 
-      return {
-        data: rows,
-        pagination: {
-          total,
-          page: parsedPage,
-          pageSize: parsedPageSize,
-          totalPages: Math.ceil(total / parsedPageSize),
-        },
-      };
-    } catch (error) {
-      console.error("❌ Error in getAgentsWithDetails:", error.message);
-      throw new Error("Failed to get agent details");
+     
+
+      countQuery = `
+        SELECT COUNT(DISTINCT a.id) AS total
+        FROM agents a
+        LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id
+        LEFT JOIN localities l ON awl.location_id = l.id
+        ${whereClause};
+      `;
     }
+
+    const [rows] = await pool.execute(dataQuery, queryParams);
+    const [countRows] = locationId === "null"
+      ? await pool.execute(countQuery)
+      : await pool.execute(countQuery, countParams);
+
+    const total = countRows[0].total;
+
+    return {
+      data: rows,
+      pagination: {
+        total,
+        page: parsedPage,
+        pageSize: parsedPageSize,
+        totalPages: Math.ceil(total / parsedPageSize),
+      },
+    };
+  } catch (error) {
+    console.error("❌ Error in getAgentsWithDetails:", error.message);
+    throw new Error("Failed to get agent details");
   }
-  ,
+}
+
+
+,
 
 
   async getAllUsersWithPagination(page = 1, limit = 10) {

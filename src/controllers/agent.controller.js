@@ -4,14 +4,13 @@ const { authService, agentService, tokenService, agentWorkingLocationService, em
 const { image } = require('../config/cloudinary');
 
 const register = catchAsync(async (req, res) => {
-  let { name, phone } = req.body;
+  let { name, phone,email } = req.body;
   console.log('Body:', req.body);
-  console.log('File:', req.file);
-
-  // Trim and validate phone
   if (!phone) {
     return res.status(400).json({ message: 'Phone number is required.' });
   }
+
+
 
   phone = phone.trim();
   if (!phone.startsWith('+91')) {
@@ -31,21 +30,14 @@ const register = catchAsync(async (req, res) => {
   }
 
   // Validate image
-  if (!req.file || !req.file.filename) {
-    return res.status(400).json({
-      success: false,
-      message: 'Image file is required.',
-    });
-  }
 
-  const imagePath = `images/${req.file.filename}`;
 
   // Prepare payload
   const userData = {
     ...req.body,
     name: name.trim(),
     phone,
-    image_url: imagePath,
+    email: email,
   };
 
   // Call service to create agent
@@ -116,22 +108,35 @@ const login = catchAsync(async (req, res) => {
 
 const UpdateProfile = async (req, res) => {
   try {
-    const agentId = req.user.userId; // assume karte hain agentId body me aa rahi hai
+    const agentId = req.user.userId;
     const updateData = req.body;
+
+    // Debugging logs
+    console.log('Uploaded Files:', req.files);
+    console.log('Form Data:', updateData);
+
     if (!agentId) {
       return res.status(400).json({ message: 'Agent ID is required' });
     }
 
-    if (!req.file || !req.file.filename) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Image file is required',
+        message: 'At least one image file is required',
       });
     }
 
-    const images = `/public/images/${req.file.filename}`;
+    // Store all image paths
+    const imagePaths = req.files.map(file => `image/${file.filename}`);
 
-    const success = await agentService.updateProfile(agentId, updateData, images);
+    // Save as array or comma-separated string, depending on your DB design
+    updateData.images = imagePaths
+    console.log(imagePaths) // or imagePaths.join(',') if you're storing as CSV
+    console.log(updateData)
+      
+    // Now call the update service with all form data + images
+    const success = await agentService.updateProfile(agentId, updateData);
+
     if (success) {
       return res.status(200).json({ message: 'Profile updated successfully' });
     } else {
@@ -141,18 +146,18 @@ const UpdateProfile = async (req, res) => {
     console.error('Error updating agent profile:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
+};
 
-}
 
 const AddWorkingLocation = catchAsync(async (req, res) => {
   const agentId = req.user.userId;
-  const { location_id } = req.body;
+  const { location } = req.body;
 
-  if (!Array.isArray(location_id) || location_id.length === 0) {
+  if (!Array.isArray(location) || location.length === 0) {
     return res.status(400).json({ message: 'Locations must be a non-empty array.' });
   }
-  console.log(agentId, location_id)
-  const result = await agentWorkingLocationService.addLocations(agentId, location_id);
+  console.log(agentId, location)
+  const result = await agentWorkingLocationService.addLocations(agentId, location);
 
   if (result) {
     res.status(201).json({ message: 'Locations added successfully', locations: result });

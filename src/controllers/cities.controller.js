@@ -106,6 +106,7 @@ const fetchAllLocalities = catchAsync(async (req, res) => {
     let filter = {};
     if (cityId) filter.city_id = cityId;
     if (areaId) filter.area_id = areaId;
+    console.log(filter,"filter")
 
     const data = await localityService.getAllLocalities(filter);
     res.status(httpStatus.OK).send(data);

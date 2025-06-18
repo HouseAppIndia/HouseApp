@@ -7,7 +7,7 @@ const moment = require('moment')
 
 const createUser = async (userBody) => {
   try {
-    const { name, phone, image_url } = userBody;
+    const { name, phone, email } = userBody;
     console.log('User Body:', userBody);
 
     // Check if phone already exists
@@ -21,7 +21,7 @@ const createUser = async (userBody) => {
     const expiresAt = moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
 
     // Create new agent
-    const user = await Agent.create(name, phone, image_url);
+    const user = await Agent.create(name, phone, email);
     if (!user || !user.id) {
       return { error: true, message: 'Failed to create user' };
     }
@@ -177,8 +177,8 @@ const deleteUserAccount = async (user_id, otp) => {
 };
 
 
-const updateProfile = async (agentId, userBody, images) => {
-  return Agent.updateProfile(agentId, userBody, images)
+const updateProfile = async (agentId, userBody) => {
+  return Agent.updateProfile(agentId, userBody)
 }
 
 const upsertOfficeAddress = async (agentId, { address, latitude, longitude }) => {

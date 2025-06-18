@@ -79,11 +79,14 @@ const Client = {
   },
 
   // Get agents working at a location
-  async getAgentsByLocation(locationId, userId,limit, offset = 0) {
-    console.log(locationId,userId, limit, offset = 0)
-    try {
-      if (!locationId) { return { success: false, message: 'Location ID is required.', data: [] }; }
-      const [rows] = await pool.execute(`
+async getAgentsByLocation(locationId, userId, limit, offset = 0) {
+  console.log(locationId, userId, limit, offset = 0,"hhuuhu")
+  try {
+    if (!locationId) {
+      return { success: false, message: 'Location ID is required.', data: [] };
+    }
+
+    const query = `
       SELECT
         a.id AS agent_id,
         a.name,
@@ -91,36 +94,48 @@ const Client = {
         a.status,
         a.whatsapp_number,
         a.experience_years,
-        a.image_url,
         a.rating,
         a.languages_spoken,
         oa.address AS office_address,
         MIN(awl.ranking) AS min_ranking,
         (
-          SELECT COUNT(*) > 0
-          FROM bookmarks b
+          SELECT COUNT(*) 
+          FROM bookmarks b 
           WHERE b.user_id = ${userId} AND b.agent_id = a.id
-        ) AS isBookmarked
+        ) AS isBookmarked,
+        COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls
       FROM agents a
       LEFT JOIN office_address oa ON a.id = oa.agent_id
-      LEFT JOIN agent_working_locations awl
-        ON a.id = awl.agent_id
-        AND awl.location_id = ${locationId}
-        AND awl.is_approved = TRUE
-      LEFT JOIN localities l ON awl.location_id = l.id
+      LEFT JOIN agent_working_locations awl 
+        ON a.id = awl.agent_id AND awl.location_id = ? AND awl.is_approved = TRUE
+      LEFT JOIN agent_images img ON a.id = img.agent_id
       WHERE awl.is_approved = TRUE
       GROUP BY a.id
       ORDER BY min_ranking
-      LIMIT ${limit};
-    `); // location_id passed as parameter
+      LIMIT 10 OFFSET 0;
+    `;
 
-      return rows;
+      const values = [locationId];
 
-    } catch (error) {
-      console.error('Error fetching agents:', error);
-      return { success: false, message: 'Failed to fetch agents.', data: [] };
-    }
-  },
+    const [rows] = await pool.execute(query, values);
+
+    // Optional: convert image_urls string to array
+    const formatted = rows.map(row => ({
+      ...row,
+      image_urls: typeof row.image_urls === 'string'
+        ? JSON.parse(row.image_urls)
+        : row.image_urls
+    }));
+
+    return { success: true, data: formatted };
+
+  } catch (error) {
+    console.error('Error fetching agents:', error);
+    return { success: false, message: 'Failed to fetch agents.', data: [] };
+  }
+}
+
+,
 
 
   async updateAgentAverageRating(agent_id) {
@@ -139,17 +154,30 @@ const Client = {
 
 
   // Add a new review
-  async createReview({ user_id, agent_id, comment = '', rating }) {
-    console.log({ user_id, agent_id, comment, rating }, "jdkjsl")
+  async createReview({ user_id, agent_id, comment = '', rating,imagePaths }) {
+    console.log({ user_id, agent_id, comment, rating, imagePaths }, "jdkjsl");
     try {
       const [result] = await pool.execute(
         `INSERT INTO user_review (user_id, agent_id, comment, rating)
          VALUES (?, ?, ?, ?)`,
         [user_id, agent_id, comment, rating]
       );
-      console.log("hellllo")
+
+      const reviewId = result.insertId;
+
+      // Insert review images if available
+      if (Array.isArray(imagePaths) && imagePaths.length > 0) {
+        const imageInsertQuery = `INSERT INTO review_images (review_id, image_url) VALUES (?, ?)`;
+
+        for (const imgUrl of imagePaths) {
+          console.log("Inserting image:", imgUrl);
+          await pool.execute(imageInsertQuery, [reviewId, imgUrl]);
+        }
+      }
+
       await this.updateAgentAverageRating(agent_id);
-      return { success: true, id: result.insertId, message: 'Review added successfully.' };
+
+      return { success: true, id: reviewId, message: 'Review added successfully.' };
     } catch (error) {
       console.error('Error creating review:', error);
       return { success: false, message: 'Failed to add review.' };
@@ -230,16 +258,21 @@ const Client = {
   // Get all reviews
 async getAllReviews({ agent_id } = {}) {
   try {
-    const query = `
-      SELECT ur.*, 
-             u.name AS user_name,
-             a.name AS agent_name,
-             (SELECT COUNT(*) FROM user_review WHERE agent_id = ur.agent_id) AS total_comments
-      FROM user_review ur
-      JOIN agents a ON ur.agent_id = a.id
-      JOIN user u ON ur.user_id = u.id
-      WHERE ur.agent_id = ?
-    `;
+  const query = `
+  SELECT 
+    ur.*, 
+    u.name AS user_name,
+    a.name AS agent_name,
+    COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls,
+    (SELECT COUNT(*) FROM user_review WHERE agent_id = ur.agent_id) AS total_comments
+  FROM user_review ur
+  JOIN agents a ON ur.agent_id = a.id
+  JOIN user u ON ur.user_id = u.id
+  LEFT JOIN review_images img ON img.review_id = ur.id
+  WHERE ur.agent_id = ?
+  GROUP BY ur.id
+`;
+
 
     const [rows] = await pool.execute(query, [agent_id]);
 

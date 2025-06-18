@@ -89,27 +89,39 @@ const localities = {
   // FIND LOCALITIES BY CITY OR AREA
   async findlocalities({ city_id = null, area_id = null }) {
     try {
-      if (city_id) {
-        console.log('Finding localities by city_id:', city_id);
-        const [allLocalities] = await pool.execute(
-          `SELECT * FROM localities WHERE city_id = ?`,
-          [city_id]
-        );
-        return { data: allLocalities };
-      }
-      if (area_id) {
-        console.log('Finding localities by area_id:', area_id);
-        const [subLocalities] = await pool.execute(
-          `SELECT * FROM localities WHERE area_id = ?`,
-          [area_id]
-        );
-        return { data: subLocalities };
-      }
-      return { data: [] };
-    } catch (error) {
-      console.error('Error in Localities.findlocalities:', error);
-      return { error: error.message };
+    if (city_id && area_id) {
+      console.log('Finding localities by city_id and area_id:', city_id, area_id);
+      const [filteredLocalities] = await pool.execute(
+        `SELECT * FROM localities WHERE city_id = ? AND area_id = ?`,
+        [city_id, area_id]
+      );
+      return { data: filteredLocalities };
     }
+
+    if (city_id) {
+      console.log('Finding localities by city_id:', city_id);
+      const [allLocalities] = await pool.execute(
+        `SELECT * FROM localities WHERE city_id = ?`,
+        [city_id]
+      );
+      return { data: allLocalities };
+    }
+
+    if (area_id) {
+      console.log('Finding localities by area_id:', area_id);
+      const [subLocalities] = await pool.execute(
+        `SELECT * FROM localities WHERE area_id = ?`,
+        [area_id]
+      );
+      return { data: subLocalities };
+    }
+
+    return { data: [] };
+  } catch (error) {
+    console.error('Error in Localities.findlocalities:', error);
+    return { error: error.message };
+  }
+
   },
 async searchLocalitiesByName(searchTerm) {
    try {
@@ -147,6 +159,9 @@ async searchLocalitiesByName(searchTerm) {
     console.error('Error in searchLocalitiesByName:', err.message);
     return [];
   }
+},
+async findLocalitiesByCityOrArea(){
+
 }
 
 };

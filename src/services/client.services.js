@@ -177,9 +177,9 @@ const recordUserClick = async (user_id, data) => {
   }
 };
 
-const createReview = async ({ user_id, agent_id, comment, rating }) => {
+const createReview = async ({ user_id, agent_id, comment, rating,imagePaths }) => {
   try {
-    return await Client.createReview({ user_id, agent_id, comment, rating });
+    return await Client.createReview({ user_id, agent_id, comment, rating,imagePaths });
   } catch (error) {
     console.error('Error in createReview:', error);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to create review');

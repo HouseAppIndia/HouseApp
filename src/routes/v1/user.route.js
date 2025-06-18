@@ -4,6 +4,7 @@ const validate = require('../../middlewares/validate');
 const userValidation = require('../../validations/user.validation');
 const userController = require('../../controllers/user.controller');
 const bookmarkController =require('../../controllers/bookmark.controller')
+const uploadImage =require('../../middlewares/UploadBanner')
 
 const router = express.Router();
 
@@ -20,7 +21,7 @@ router.delete('/delete-account', userAuth, userController.deleteAccountHandler);
 router.post('/verify-delete-account', userAuth, userController.verifyAndDeleteAccount);
 router
   .route('/reviews')
-  .post(userAuth, userController.createReview)
+  .post(userAuth,uploadImage.array('image'), userController.createReview)
   .get(userAuth, userController.getAllReviews);
 
 // Routes for /reviews/:id

@@ -6,6 +6,7 @@ const getAllLocalities = async (filter = {}) => {
   console.log('Filter received:', filter);
 
   if (!filter.city_id && !filter.area_id) {
+      console.log("jjj")
     return await localities.findAll();
   }
 
