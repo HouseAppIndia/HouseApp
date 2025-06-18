@@ -216,7 +216,8 @@ const getAgentsDetails = catchAsync(async (req, res) => {
 })
 
 const getActiveBanners=catchAsync(async (req,res) => {
-  const banner = await ClientService.retrieveActiveBanners()
+  const city_id =req.query.city_id
+  const banner = await ClientService.retrieveActiveBanners(city_id)
   res.status(200).send(banner)
 })
 

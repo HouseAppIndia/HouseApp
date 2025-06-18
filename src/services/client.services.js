@@ -229,9 +229,9 @@ const handleUpdateProfile =(Id, userBody)=>{
   return Client.updateUserById(Id, userBody)
 }
 
-const retrieveActiveBanners =async()=>{
+const retrieveActiveBanners =async(city_id)=>{
   try {
-     const data =await Client.getTodayBanners()
+     const data =await Client.getTodayBanners(city_id)
      return data
   } catch (error) {
       return error
