@@ -1231,7 +1231,38 @@ async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id) {
       console.error('Error fetching detailed interactions:', error);
       throw error;
     }
+  },
+    // Get user by ID
+    async getAgentById(agent_id) {
+  try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        a.*, 
+        oa.address AS office_address,
+        oa.latitude,
+        oa.longitude,
+        oa.status AS office_status,
+        GROUP_CONCAT(ai.image_url) AS images
+      FROM agents a
+      LEFT JOIN office_address oa ON a.id = oa.agent_id
+      LEFT JOIN agent_images ai ON a.id = ai.agent_id
+      WHERE a.id = ?
+      GROUP BY a.id
+    `, [agent_id]);
+
+    if (!rows.length) {
+      return { success: false, message: 'Agent not found.' };
+    }
+
+    const agent = rows[0];
+    agent.images = agent.images ? agent.images.split(',') : [];
+
+    return { success: true, data: agent };
+  } catch (error) {
+    console.error('Error fetching agent by ID:', error);
+    return { success: false, message: 'Failed to fetch agent.' };
   }
+},
 
 
 

@@ -416,6 +416,14 @@ const fetchAllPropertyRequests = catchAsync(async (req, res) => {
   });
 });
 
+const getAgentsDetails = catchAsync(async (req, res) => {
+  console.log("hello")
+  const id = req.params.id
+  if (!id) return { message: "id is required" }
+  const agentdetail = await userService.getAgentsByID(id)
+  res.status(200).send(agentdetail)
+})
+
 
 
 module.exports = {
@@ -452,5 +460,6 @@ module.exports = {
   fetchAllBanners,
   updateBannerInfo,
   fetchSingleBanner,
-  fetchAllPropertyRequests
+  fetchAllPropertyRequests,
+  getAgentsDetails
 };

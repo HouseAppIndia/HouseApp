@@ -412,16 +412,38 @@ async getAllReviews({ agent_id } = {}) {
   },
 
   // Get user by ID
-  async geAgentsById(agent_id) {
-    try {
-      const [rows] = await pool.execute('SELECT * FROM agents WHERE id = ?', [agent_id]);
-      if (!rows.length) return { success: false, message: 'User not found.' };
-      return { success: true, data: rows[0] };
-    } catch (error) {
-      console.error('Error fetching user by ID:', error);
-      return { success: false, message: 'Failed to fetch user.' };
+ async getAgentById(agent_id) {
+  console.log("hello")
+  try {
+    const [rows] = await pool.execute(`
+      SELECT 
+        a.*, 
+        oa.address AS office_address,
+        oa.latitude,
+        oa.longitude,
+        oa.status AS office_status,
+        GROUP_CONCAT(ai.image_url) AS images
+      FROM agents a
+      LEFT JOIN office_address oa ON a.id = oa.agent_id
+      LEFT JOIN agent_images ai ON a.id = ai.agent_id
+      WHERE a.id = ?
+      GROUP BY a.id
+    `, [agent_id]);
+
+    if (!rows.length) {
+      return { success: false, message: 'Agent not found.' };
     }
-  },
+
+    const agent = rows[0];
+    agent.images = agent.images ? agent.images.split(',') : [];
+
+    return { success: true, data: agent };
+  } catch (error) {
+    console.error('Error fetching agent by ID:', error);
+    return { success: false, message: 'Failed to fetch agent.' };
+  }
+}
+,
   async getLimitCheck(locationId){
     const query = `
     SELECT data_limit 

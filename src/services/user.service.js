@@ -288,6 +288,16 @@ const fetchInteractionHistory=async(range)=>{
    }
 }
 
+
+const getAgentsByID = async (id) => {
+  try {
+    return await User.getAgentById(id);
+  } catch (error) {
+    console.error('Error in agentdeel:', error);
+    return ({status:httpStatus.INTERNAL_SERVER_ERROR, message:'Failed to get agent detail'});
+  }
+};
+
 const uploadBannerWithImage = async (
   {title,
   image_url,
@@ -412,5 +422,6 @@ module.exports = {
   uploadBannerWithImage,
   retrieveAllBanners,
   updateExistingBanner,
-  getSelectedBanner
+  getSelectedBanner,
+  getAgentsByID
 };
