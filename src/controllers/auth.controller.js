@@ -1,6 +1,6 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
-const { authService, userService, tokenService, emailService, notificationService } = require('../services');
+const { authService, userService, tokenService, emailService, notificationService,PropertyRequestService } = require('../services');
 const { bool } = require('joi');
 
 const register = catchAsync(async (req, res) => {
@@ -408,6 +408,16 @@ const fetchSingleBanner = catchAsync(async (req, res) => {
   });
 })
 
+const fetchAllPropertyRequests = catchAsync(async (req, res) => {
+  const result = await PropertyRequestService.getAllPropertyRequests();
+  res.status(200).json({
+    message: 'Property requests fetched successfully',
+    data: result
+  });
+});
+
+
+
 module.exports = {
   register,
   login,
@@ -441,5 +451,6 @@ module.exports = {
   saveBanner,
   fetchAllBanners,
   updateBannerInfo,
-  fetchSingleBanner
+  fetchSingleBanner,
+  fetchAllPropertyRequests
 };

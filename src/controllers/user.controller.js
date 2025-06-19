@@ -2,7 +2,7 @@ const httpStatus = require('http-status');
 const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
-const { ClientService, authService, tokenService } = require('../services');
+const { ClientService, authService, tokenService,PropertyRequestService } = require('../services');
 
 const createUser = catchAsync(async (req, res) => {
   console.log(req.body)
@@ -221,6 +221,39 @@ const getActiveBanners=catchAsync(async (req,res) => {
   res.status(200).send(banner)
 })
 
+
+const createPropertyRequest = catchAsync(async (req, res) => {
+  const user_id = req.user.userId;
+  const {
+    you_want_to,
+    property_type,
+    residential_type,
+    location_id,
+    your_requirements
+  } = req.body;
+
+ if (!you_want_to || !property_type) {
+  return res.status(400).json({ message: 'you_want_to and property_type are required' });
+}
+
+  const data = {
+    user_id,
+    you_want_to,
+    property_type,
+    residential_type,
+    location_id,
+    your_requirements
+  };
+ console.log("hello")
+  const result = await PropertyRequestService.createPropertyRequest(data);
+
+  res.status(201).json({
+    message: 'Property request created successfully',
+    data: result
+  });
+});
+
+
 module.exports = {
   createUser,
   createReview,
@@ -237,5 +270,6 @@ module.exports = {
   deleteAccountHandler,
   verifyAndDeleteAccount,
   getAgentsDetails,
-  getActiveBanners
+  getActiveBanners,
+  createPropertyRequest
 };

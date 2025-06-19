@@ -371,12 +371,28 @@ async function createBookmarksTable() {
   await pool.execute(query);
 }
 
+async function BuySellExpert() {
+  const query = `
+    CREATE TABLE IF NOT EXISTS property_requests (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      you_want_to ENUM('sell', 'buy', 'rent') NOT NULL,
+      property_type ENUM('residential', 'commercial') NOT NULL,
+      residential_type VARCHAR(50),
+      location_id INT,
+      your_requirements TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+       FOREIGN KEY (user_id) REFERENCES \`user\`(id) ON DELETE CASCADE,
+      FOREIGN KEY (location_id) REFERENCES localities(id) ON DELETE CASCADE
+    );
+  `;
+
+  await pool.execute(query);
+}
 
 
 // Dummy function if 'addEntityColumn' is referenced but not defined
-async function addEntityColumn() {
-  // No-op or implement column alterations here
-}
+
 
 
 
@@ -399,12 +415,11 @@ async function initializeDatabase() {
     await createReviewImagesTable()
     await createOtpTable();
     await createOfficeAddressTable();
-    await addEntityColumn();
     await createStaticContentTables();
     await AgentHistory();
     await createSponsorshipTable();
     await createBookmarksTable()
-
+    await BuySellExpert()
 
     console.log("✅ All tables created successfully!");
   } catch (err) {

@@ -38,6 +38,7 @@ router
 router.get('/bookmark', userAuth, bookmarkController.getBookmarks);
 router.post('/bookmark', userAuth, bookmarkController.addBookmark);
 router.delete('/bookmark', userAuth, bookmarkController.removeBookmark);
+router.post('/add/expert_help',userAuth,userController.createPropertyRequest)
 
 
 module.exports = router;
