@@ -9,9 +9,9 @@ function createStaticModel(tableName) {
     const title = data.title ?? null;
     const content = data.content ?? null;
     const status = data.status ?? true;
-
+  console.log(data,tableName)
     const query = `
-      INSERT INTO terms_and_conditions (id, title, content, status)
+      INSERT INTO ${tableName} (id, title, content, status)
       VALUES (1, ?, ?, ?)
       ON DUPLICATE KEY UPDATE 
         title = VALUES(title), 
