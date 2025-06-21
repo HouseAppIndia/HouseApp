@@ -4,7 +4,7 @@ const { authService, agentService, tokenService, agentWorkingLocationService, em
 const { image } = require('../config/cloudinary');
 
 const register = catchAsync(async (req, res) => {
-  let { name, phone,email } = req.body;
+  let {phone } = req.body;
   console.log('Body:', req.body);
   if (!phone) {
     return res.status(400).json({ message: 'Phone number is required.' });
@@ -24,20 +24,13 @@ const register = catchAsync(async (req, res) => {
     return res.status(400).json({ message: 'Invalid phone number format.' });
   }
 
-  // Validate name
-  if (!name || !/^[A-Za-z\s]+$/.test(name.trim())) {
-    return res.status(400).json({ message: 'Name must contain only alphabets and spaces.' });
-  }
 
   // Validate image
 
 
   // Prepare payload
   const userData = {
-    ...req.body,
-    name: name.trim(),
-    phone,
-    email: email,
+    phone:req.body.phone
   };
 
   // Call service to create agent

@@ -50,6 +50,7 @@ async function createAgentTable() {
       id INT AUTO_INCREMENT PRIMARY KEY,
       name VARCHAR(100),
       phone VARCHAR(20) UNIQUE,
+      agency_name VARCHAR(100),
       whatsapp_number VARCHAR(20),
       image_url VARCHAR(255),
       office_address TEXT,

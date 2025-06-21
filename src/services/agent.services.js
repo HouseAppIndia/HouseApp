@@ -55,12 +55,17 @@ const createUser = async (userBody) => {
 const loginUserWithEmailAndPassword = async (phone) => {
   try {
     let user = await Agent.getUserByPhone(phone);
-     if (!user || !user.id) {
-      return { error: true, message: "User not found. Please register first." };
+
+    // If user not found, create new
+    if (!user || !user.id) {
+      user = await Agent.create(phone); // update the existing `user` variable
     }
+
+    // Send OTP
     const otp = 123456;
     const expiresAt = moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
     await Agent.isSaveOtp(user.id, otp, expiresAt);
+
     return {
       success: true,
       message: "Login OTP sent successfully",

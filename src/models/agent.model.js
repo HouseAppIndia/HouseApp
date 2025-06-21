@@ -6,7 +6,7 @@
     const Agent = {
         async isMobilePhone(phone, excludeId = null) {
             try {
-                let query = 'SELECT 1 FROM agents WHERE phone = ?';
+                let query = 'SELECT 1 FROM agents WHERE phone = ? AND status = true';
                 const params = [phone];
 
                 if (excludeId) {
@@ -22,7 +22,7 @@
             }
         },
 
-        async create(name, phone,email) {
+        async create(phone) {
             try {
                 const isPhoneExists = await this.isMobilePhone(phone);
                 if (isPhoneExists) {
@@ -30,8 +30,8 @@
                 }
 
                 const [result] = await pool.execute(
-                `INSERT INTO agents (name, phone, email) VALUES (?, ?, ?)`,
-                [name, phone, email]
+                `INSERT INTO agents (phone, status) VALUES (?, ?)`,
+                [phone, true]
                 );
 
                 return {
@@ -79,9 +79,19 @@
                     values.push(updateData.name);
                 }
 
+                if(updateData.agency_name){
+                    fields.push('agency_name=?')
+                    values.push(updateData.agency_name)
+                }
+
                 if (updateData.whatsapp_number) {
                     fields.push('whatsapp_number = ?');
                     values.push(updateData.whatsapp_number);
+                }
+
+                  if (updateData.email) {
+                    fields.push('email = ?');
+                    values.push(updateData.email);
                 }
 
                 // if (images) {
@@ -89,25 +99,19 @@
                 //     // values.push(images);
                 // }
 
-                if (updateData.city) {
-                    fields.push('city = ?');
-                    values.push(updateData.city);
-                }
 
                 if (updateData.experience_years != null) {
                     fields.push('experience_years = ?');
                     values.push(updateData.experience_years);
                 }
 
-                if (updateData.languages_spoken) {
-                    fields.push('languages_spoken = ?');
-                    values.push(JSON.stringify(updateData.languages_spoken));
-                }
 
                 if(updateData.description){
                     fields.push('description=?')
                     values.push(JSON.stringify(updateData.description))
                 }
+
+            
 
                 if (fields.length === 0) {
                     return { success: false, message: 'No valid fields to update' };
@@ -115,7 +119,7 @@
 
                 if (fields.length > 0) {
                 values.push(agentId);
-                const query = `UPDATE agents SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+                const query = `UPDATE agents SET ${fields.join(', ')},status = false, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
                 result = await pool.execute(query, values);
         }
     if (Array.isArray(updateData.images) && updateData.images.length > 0) {
