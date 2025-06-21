@@ -90,6 +90,8 @@ async getAgentsByLocation(locationId, userId, limit, offset = 0) {
       SELECT
         a.id AS agent_id,
         a.name,
+        a.agency_name,
+        a.email,
         a.phone,
         a.status,
         a.whatsapp_number,
