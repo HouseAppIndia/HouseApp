@@ -456,7 +456,11 @@ async getAllReviews({ agent_id } = {}) {
   return rows[0]
   },
   async  getTodayBanners(city_id) {
- const [rows] = await pool.execute(`SELECT * FROM banners WHERE DATE(end_time) = CURDATE() AND is_active = TRUE AND city_id = ?`, [city_id]);
+ const [rows] = await pool.execute(
+  `SELECT * FROM banners WHERE DATE(end_time) > CURDATE() AND is_active = TRUE AND city_id = ?`,
+  [city_id]
+);
+
   return rows;
 }
 
