@@ -9,8 +9,10 @@ const pushSystemNotification = () => {
 
 const handleNotificationAction = async (id, source) => {
   try {
+    
     const value = id; // or address if source is office_address
     const response = await User.verifyLocation({ source, value });
+    console.log(value,response,"Coooooo")
 
     if (response.success) {
       console.log("✅ Success:", response.message);

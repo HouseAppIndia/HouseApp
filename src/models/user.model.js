@@ -302,6 +302,9 @@ const User = {
       } else if (source === 'office_address') {
         table = 'office_address';
         column = 'id';
+      } else if (source === 'agent'){
+          table = 'agents';
+          column = 'id';
       } else {
         return { success: false, message: 'Invalid source type provided.' };
       }
@@ -309,17 +312,24 @@ const User = {
       // Build the update query based on source
       if (source === 'agent_working_location') {
         updateQuery = `
-            UPDATE ${table}
-            SET is_approved = TRUE
-            WHERE ${column} = ?
-          `;
+    UPDATE ${table}
+    SET is_approved = TRUE
+    WHERE ${column} = ?
+  `;
+      } else if (source === 'agent') {
+        updateQuery = `
+    UPDATE ${table}
+    SET status = TRUE
+    WHERE ${column} = ?
+  `;
       } else {
         updateQuery = `
-            UPDATE ${table}
-            SET status = 'accepted'
-            WHERE ${column} = ?
-          `;
+    UPDATE ${table}
+    SET status = 'accepted'
+    WHERE ${column} = ?
+  `;
       }
+
 
       console.log(updateQuery, "updateQuery");
 
@@ -397,8 +407,9 @@ const User = {
   async getNotificationData() {
     try {
       const agentQuery = `
-          SELECT id AS entity_id, name, created_at, 'agent' AS source
+          SELECT id AS entity_id, name,status, created_at, 'agent' AS source
           FROM agents
+          WHERE status = FALSE
           ORDER BY created_at DESC
           LIMIT 10
         `;
@@ -519,23 +530,23 @@ const User = {
     }
   }
   ,
-async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id) {
-  console.log(page, pageSize, locationId, "jefj");
+  async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id) {
+    console.log(page, pageSize, locationId, "jefj");
 
-  try {
-    const parsedPage = parseInt(page, 10);
-    const parsedPageSize = parseInt(pageSize, 10);
-    const offset = (parsedPage - 1) * parsedPageSize;
+    try {
+      const parsedPage = parseInt(page, 10);
+      const parsedPageSize = parseInt(pageSize, 10);
+      const offset = (parsedPage - 1) * parsedPageSize;
 
-    let dataQuery = "";
-    let countQuery = "";
-    let queryParams = [];
-    let countParams = [];
-    console.log(city_id,area_id,locationId)
-    if (city_id===null &&area_id===null &&locationId === null) {
-      console.log("No location filter");
+      let dataQuery = "";
+      let countQuery = "";
+      let queryParams = [];
+      let countParams = [];
+      console.log(city_id, area_id, locationId)
+      if (city_id === null && area_id === null && locationId === null) {
+        console.log("No location filter");
 
-      dataQuery = `
+        dataQuery = `
         SELECT 
           a.id AS agent_id,
           a.email,
@@ -557,26 +568,26 @@ async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id) {
         GROUP BY a.id
         LIMIT ${parsedPageSize} OFFSET ${offset};
       `;
-      countQuery = `SELECT COUNT(*) AS total FROM agents;`;
-    } else {
-      console.log("With location/area/city filter");
-      let whereClause = '';
+        countQuery = `SELECT COUNT(*) AS total FROM agents;`;
+      } else {
+        console.log("With location/area/city filter");
+        let whereClause = '';
 
-      if (locationId) {
-        whereClause = 'WHERE awl.location_id = ?';
-        queryParams.push(parseInt(locationId));
-        countParams.push(parseInt(locationId));
-      } else if (area_id) {
-        whereClause = 'WHERE l.area_id = ?';
-        queryParams.push(parseInt(area_id))
-        countParams.push(parseInt(area_id));
-      } else if (city_id) {
-        whereClause = 'WHERE l.city_id = ?';
-      queryParams.push(parseInt(city_id));
-        countParams.push(parseInt(city_id));
-      }
+        if (locationId) {
+          whereClause = 'WHERE awl.location_id = ?';
+          queryParams.push(parseInt(locationId));
+          countParams.push(parseInt(locationId));
+        } else if (area_id) {
+          whereClause = 'WHERE l.area_id = ?';
+          queryParams.push(parseInt(area_id))
+          countParams.push(parseInt(area_id));
+        } else if (city_id) {
+          whereClause = 'WHERE l.city_id = ?';
+          queryParams.push(parseInt(city_id));
+          countParams.push(parseInt(city_id));
+        }
 
-      dataQuery = `
+        dataQuery = `
         SELECT 
           a.id AS agent_id,
           a.name,
@@ -603,41 +614,41 @@ async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id) {
         LIMIT ${parsedPageSize} OFFSET ${offset};
       `;
 
-     
 
-      countQuery = `
+
+        countQuery = `
         SELECT COUNT(DISTINCT a.id) AS total
         FROM agents a
         LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id
         LEFT JOIN localities l ON awl.location_id = l.id
         ${whereClause};
       `;
+      }
+
+      const [rows] = await pool.execute(dataQuery, queryParams);
+      const [countRows] = locationId === "null"
+        ? await pool.execute(countQuery)
+        : await pool.execute(countQuery, countParams);
+
+      const total = countRows[0].total;
+
+      return {
+        data: rows,
+        pagination: {
+          total,
+          page: parsedPage,
+          pageSize: parsedPageSize,
+          totalPages: Math.ceil(total / parsedPageSize),
+        },
+      };
+    } catch (error) {
+      console.error("❌ Error in getAgentsWithDetails:", error.message);
+      throw new Error("Failed to get agent details");
     }
-
-    const [rows] = await pool.execute(dataQuery, queryParams);
-    const [countRows] = locationId === "null"
-      ? await pool.execute(countQuery)
-      : await pool.execute(countQuery, countParams);
-
-    const total = countRows[0].total;
-
-    return {
-      data: rows,
-      pagination: {
-        total,
-        page: parsedPage,
-        pageSize: parsedPageSize,
-        totalPages: Math.ceil(total / parsedPageSize),
-      },
-    };
-  } catch (error) {
-    console.error("❌ Error in getAgentsWithDetails:", error.message);
-    throw new Error("Failed to get agent details");
   }
-}
 
 
-,
+  ,
 
 
   async getAllUsersWithPagination(page = 1, limit = 10) {
@@ -1232,10 +1243,10 @@ async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id) {
       throw error;
     }
   },
-    // Get user by ID
-    async getAgentById(agent_id) {
-  try {
-    const [rows] = await pool.execute(`
+  // Get user by ID
+  async getAgentById(agent_id) {
+    try {
+      const [rows] = await pool.execute(`
       SELECT 
         a.*, 
         oa.address AS office_address,
@@ -1250,19 +1261,19 @@ async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id) {
       GROUP BY a.id
     `, [agent_id]);
 
-    if (!rows.length) {
-      return { success: false, message: 'Agent not found.' };
+      if (!rows.length) {
+        return { success: false, message: 'Agent not found.' };
+      }
+
+      const agent = rows[0];
+      agent.images = agent.images ? agent.images.split(',') : [];
+
+      return { success: true, data: agent };
+    } catch (error) {
+      console.error('Error fetching agent by ID:', error);
+      return { success: false, message: 'Failed to fetch agent.' };
     }
-
-    const agent = rows[0];
-    agent.images = agent.images ? agent.images.split(',') : [];
-
-    return { success: true, data: agent };
-  } catch (error) {
-    console.error('Error fetching agent by ID:', error);
-    return { success: false, message: 'Failed to fetch agent.' };
-  }
-},
+  },
 
 
 
