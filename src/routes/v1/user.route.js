@@ -15,7 +15,7 @@ router.post('/verify-otp', userController.handleOtpVerification)
 router.post('/resent-otp', userController.regenerateOtp)
 router.patch('/profile', userAuth, userController.updateProfile);
 router.get("/by-location",userAuth, userController.getAgentsByLocation)
-router.get("/agent-detail/:id", userController.getAgentsDetails)
+router.get("/agent-detail/:id",userAuth, userController.getAgentsDetails)
 router.post("/interactions/click", userAuth, userController.recordUserClick);
 router.delete('/delete-account', userAuth, userController.deleteAccountHandler);
 router.post('/verify-delete-account', userAuth, userController.verifyAndDeleteAccount);

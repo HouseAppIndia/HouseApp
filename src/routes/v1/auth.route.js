@@ -2,6 +2,7 @@ const express = require('express');
 const validate = require('../../middlewares/validate');
 const authValidation = require('../../validations/auth.validation');
 const authController = require('../../controllers/auth.controller');
+const SponserController =require('../../controllers/sponsorships.controller')
 const uploadImage =require('../../middlewares/UploadBanner')
 
 const auth = require('../../middlewares/auth');
@@ -27,6 +28,7 @@ router.get('/agents', authController.getAllAgents);
 router.get('/users',authController.getAllUsers)
 router.get('/notifications',authController.getAllNotifications)
 router.put('/notifications/:id/approve',authController.verifyNotification)
+router.delete('/notifications/:id/decline',authController.deletedata)
 router.get('/count',authController.DocumentDataCount)
 router.get('/notifications/count',authController.getNotificationCount)
 router.post('/change-password',auth, authController.changePassword);
@@ -38,8 +40,9 @@ router.route('/interactions').get(authController.getAgentInteractionLogs)
 router.route('/banners').post(uploadImage.single("image"),authController.saveBanner).get(authController.fetchAllBanners)
 router.route('/banners/:id').patch(uploadImage.single("image"),authController.updateBannerInfo).get(authController.fetchSingleBanner)
 router.route('/propteryrequest').get(authController.fetchAllPropertyRequests)
-router.get("/agent-detail/:id", authController.getAgentsDetails)
-
+router.route('/agent-detail/:id').get(authController.getAgentsDetails)
+router.route('/agent-detail/:id').delete(authController.deleteAgents)
+router.route('/agents/:agentId/sponsorships').post(SponserController.createSponsorship)
 
 
 

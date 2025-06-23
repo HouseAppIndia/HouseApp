@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { authService, userService, tokenService, emailService, notificationService,PropertyRequestService } = require('../services');
 const { bool } = require('joi');
+const pool = require('../config/db.config');
 
 const register = catchAsync(async (req, res) => {
   console.log(req.body)
@@ -126,8 +127,8 @@ const locationId = req.query.locationId ? req.query.locationId=="null"?null:req.
  console.log(city_id,"city_id")
 
   const agents = await userService.getAgentsWithDetails(page, pageSize, locationId,area_id,city_id);
-  console.log(agents.data.length)
 
+console.log(agents.working_location_ids,"jnkds")
   res.status(httpStatus.OK).json({
     success: true,
     message: 'Agents fetched successfully',
@@ -170,6 +171,18 @@ const verifyNotification = catchAsync(async (req, res) => {
   });
 })
 
+const deletedata =catchAsync(async(req,res)=>{
+    const paramsId = req.params.id
+    const source = req.body.source
+    console.log("log")
+    const declinedata =await notificationService.handleNotificationDecline(paramsId,source)
+   res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Notifications  Update successfully',
+    notifications: declinedata,
+  });
+    
+})
 
 
 const DocumentDataCount = catchAsync(async (req, res) => {
@@ -424,6 +437,20 @@ const getAgentsDetails = catchAsync(async (req, res) => {
   res.status(200).send(agentdetail)
 })
 
+const deleteAgents = catchAsync(async (req, res, next) => {
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ success: false, message: "Agent ID is required" });
+  }
+  const [result] = await pool.execute("DELETE FROM agents WHERE id = ?", [id]);
+  if (result.affectedRows === 0) {
+    return res.status(404).json({ success: false, message: "Agent not found or already deleted" });
+  }
+  res.status(200).json({ success: true, message: "Agent deleted successfully" });
+});
+
+
+
 
 
 module.exports = {
@@ -461,5 +488,7 @@ module.exports = {
   updateBannerInfo,
   fetchSingleBanner,
   fetchAllPropertyRequests,
-  getAgentsDetails
+  getAgentsDetails,
+  deletedata,
+  deleteAgents
 };

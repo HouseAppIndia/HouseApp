@@ -352,6 +352,7 @@ async function createSponsorshipTable() {
       locality_id INT DEFAULT NULL,
       start_date DATE,
       end_date DATE,
+      FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE,
       FOREIGN KEY (locality_id) REFERENCES localities(id) ON DELETE SET NULL
     );
   `;
@@ -391,6 +392,38 @@ async function BuySellExpert() {
   await pool.execute(query);
 }
 
+async function createAgentViewsTable() {
+  const query = `
+    CREATE TABLE IF NOT EXISTS agent_views (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT,
+      agent_id INT,
+      viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES \`user\`(id) ON DELETE CASCADE,
+      FOREIGN KEY (agent_id) REFERENCES agents(id) ON DELETE CASCADE
+    );
+  `;
+  await pool.execute(query);
+}
+
+
+
+async function createLocalitiesViewsTable() {
+  const query = `
+    CREATE TABLE IF NOT EXISTS locality_views (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      locality_id INT NOT NULL,
+      viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES \`user\`(id) ON DELETE CASCADE,
+      FOREIGN KEY (locality_id) REFERENCES localities(id) ON DELETE CASCADE
+    );
+  `;
+  await pool.execute(query);
+}
+
+
+
 
 // Dummy function if 'addEntityColumn' is referenced but not defined
 
@@ -421,7 +454,8 @@ async function initializeDatabase() {
     await createSponsorshipTable();
     await createBookmarksTable()
     await BuySellExpert()
-
+    await createAgentViewsTable()
+    await createLocalitiesViewsTable()
     console.log("✅ All tables created successfully!");
   } catch (err) {
     console.error("❌ Error initializing database:", err);

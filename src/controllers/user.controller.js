@@ -208,10 +208,10 @@ const getSingleReview = catchAsync(async (req, res) => {
 });
 
 const getAgentsDetails = catchAsync(async (req, res) => {
-  console.log("hello")
-  const id = req.params.id
-  if (!id) return { message: "id is required" }
-  const agentdetail = await ClientService.getAgentsByID(id)
+  const agent_id = req.params.id
+  const user_id = req.user.userId;
+  if (!agent_id) return { message: "id is required" }
+  const agentdetail = await ClientService.getAgentsByID(user_id,agent_id)
   res.status(200).send(agentdetail)
 })
 

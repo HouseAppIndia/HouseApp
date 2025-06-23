@@ -105,6 +105,13 @@ async getAgentsByLocation(locationId, userId, limit, offset = 0) {
           FROM bookmarks b 
           WHERE b.user_id = ${userId} AND b.agent_id = a.id
         ) AS isBookmarked,
+
+        (
+      SELECT COUNT(*) > 0
+      FROM sponsorships s
+      WHERE s.agent_id = a.id AND s.locality_id = ${locationId}
+    ) AS sponsorship_status,
+        
         COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls
       FROM agents a
       LEFT JOIN office_address oa ON a.id = oa.agent_id
@@ -120,7 +127,7 @@ async getAgentsByLocation(locationId, userId, limit, offset = 0) {
       const values = [locationId];
 
     const [rows] = await pool.execute(query, values);
-
+   this.recordLocalityView(userId,locationId)
     // Optional: convert image_urls string to array
     const formatted = rows.map(row => ({
       ...row,
@@ -414,8 +421,8 @@ async getAllReviews({ agent_id } = {}) {
   },
 
   // Get user by ID
- async getAgentById(agent_id) {
-  console.log("hello")
+ async getAgentById(user_id,agent_id) {
+  console.log("hello",user_id,agent_id)
   try {
     const [rows] = await pool.execute(`
       SELECT 
@@ -431,11 +438,12 @@ async getAllReviews({ agent_id } = {}) {
       WHERE a.id = ?
       GROUP BY a.id
     `, [agent_id]);
-
+    
     if (!rows.length) {
       return { success: false, message: 'Agent not found.' };
     }
-
+    console.log(user_id,agent_id)
+    this.recordAgentView(user_id,agent_id)
     const agent = rows[0];
     agent.images = agent.images ? agent.images.split(',') : [];
 
@@ -462,6 +470,20 @@ async getAllReviews({ agent_id } = {}) {
 );
 
   return rows;
+},
+async recordAgentView(user_id, agent_id){
+    const query = `
+      INSERT INTO agent_views (user_id, agent_id)
+      VALUES (?, ?)
+    `;
+   await pool.execute(query, [user_id, agent_id]);
+},
+async  recordLocalityView(user_id, locality_id) {
+  const query = `
+    INSERT INTO locality_views (user_id, locality_id)
+    VALUES (?, ?)
+  `;
+  return await pool.execute(query, [user_id, locality_id]);
 }
 
 };

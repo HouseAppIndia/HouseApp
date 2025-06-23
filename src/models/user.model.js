@@ -357,6 +357,70 @@ const User = {
   },
 
 
+   async DelcineData({ source, value }) {
+    console.log('Source:', source);
+    console.log('Value:', value);
+    try {
+      let table, column, updateQuery;
+
+      // Determine table and column based on source
+      if (source === 'agent_working_location') {
+        table = 'agent_working_locations';
+        column = 'id';
+      } else if (source === 'office_address') {
+        table = 'office_address';
+        column = 'id';
+      } else if (source === 'agent'){
+          table = 'agents';
+          column = 'id';
+      } else {
+        return { success: false, message: 'Invalid source type provided.' };
+      }
+let deleteQuery;
+      // Build the update query based on source
+     if (source === 'agent_working_location') {
+  deleteQuery = `
+    DELETE FROM ${table}
+    WHERE ${column} = ?
+  `;
+} else if (source === 'agent') {
+  deleteQuery = `
+    DELETE FROM ${table}
+    WHERE ${column} = ?
+  `;
+} else {
+  deleteQuery = `
+    DELETE FROM ${table}
+    WHERE ${column} = ?
+  `;
+}
+
+
+      console.log(deleteQuery, "deleteQuery");
+
+      const [result] = await pool.execute(deleteQuery, [value]);
+      console.log(result);
+
+      if (result.affectedRows > 0) {
+        return {
+          success: true,
+          message: `Successfully verified record from ${source}.`,
+        };
+      } else {
+        return {
+          success: false,
+          message: `No matching record found for ${value} in ${source}.`,
+        };
+      }
+    } catch (error) {
+      console.error(`❌ Error verifying location for source ${source}:`, error);
+      return {
+        success: false,
+        message: 'Internal server error.',
+      };
+    }
+  },
+
 
 
   async viewEmployeeProfile(id) {
@@ -548,26 +612,36 @@ const User = {
 
         dataQuery = `
         SELECT 
-          a.id AS agent_id,
-          a.email,
-          a.name,
-          a.phone,
-          a.status,
-          a.whatsapp_number,
-          a.experience_years,
-          a.rating,
-          a.languages_spoken,
-          oa.address AS office_address,
-          COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls,
-          GROUP_CONCAT(DISTINCT l.name SEPARATOR ', ') AS working_locations
-        FROM agents a
-        LEFT JOIN office_address oa ON a.id = oa.agent_id
-        LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id 
-        LEFT JOIN localities l ON awl.location_id = l.id
-        LEFT JOIN agent_images img ON a.id = img.agent_id
-        GROUP BY a.id
-        LIMIT ${parsedPageSize} OFFSET ${offset};
-      `;
+  a.id AS agent_id,
+  a.email,
+  a.name,
+  a.phone,
+  a.status,
+  a.whatsapp_number,
+  a.experience_years,
+  a.rating,
+  a.languages_spoken,
+  oa.address AS office_address,
+
+  -- ✅ TRUE if agent has sponsorship in any of their localities
+  (
+    SELECT COUNT(*) > 0
+    FROM sponsorships s
+    WHERE s.agent_id = a.id
+  ) AS sponsorship_status,
+
+  COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls,
+  GROUP_CONCAT(DISTINCT l.name SEPARATOR ', ') AS working_locations,
+  GROUP_CONCAT(DISTINCT l.id SEPARATOR ',') AS working_location_ids
+
+FROM agents a
+LEFT JOIN office_address oa ON a.id = oa.agent_id
+LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id 
+LEFT JOIN localities l ON awl.location_id = l.id
+LEFT JOIN agent_images img ON a.id = img.agent_id
+
+GROUP BY a.id
+LIMIT ${parsedPageSize} OFFSET ${offset};`;
         countQuery = `SELECT COUNT(*) AS total FROM agents;`;
       } else {
         console.log("With location/area/city filter");
@@ -599,6 +673,12 @@ const User = {
           a.rating,
           a.languages_spoken,
           oa.address AS office_address,
+-- ✅ TRUE if agent has sponsorship in any of their localities
+  (
+    SELECT COUNT(*) > 0
+    FROM sponsorships s
+    WHERE s.agent_id = a.id
+  ) AS sponsorship_status,
           COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls,
           GROUP_CONCAT(DISTINCT l.name ORDER BY awl.ranking SEPARATOR ', ') AS working_locations,
           GROUP_CONCAT(DISTINCT awl.ranking ORDER BY awl.ranking SEPARATOR ', ') AS rankings,
@@ -631,9 +711,17 @@ const User = {
         : await pool.execute(countQuery, countParams);
 
       const total = countRows[0].total;
+      const agents = rows.map(agent => {
+  return {
+    ...agent,
+    working_location_ids: agent.working_location_ids
+      ? agent.working_location_ids.split(',').map(Number)
+      : [],
+  };
+});
 
       return {
-        data: rows,
+        data: agents,
         pagination: {
           total,
           page: parsedPage,

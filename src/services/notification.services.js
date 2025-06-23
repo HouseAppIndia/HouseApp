@@ -25,8 +25,27 @@ const handleNotificationAction = async (id, source) => {
     console.error("❌ Error in handleNotificationAction:", error);
     return { success: false, message: "Something went wrong." };
   }
-};
+}
+;
+const handleNotificationDecline =async(id, source)=>{
+   try {
+    
+    const value = id; // or address if source is office_address
+    const response = await User.DelcineData({ source, value });
+    console.log(value,response,"Coooooo")
 
+    if (response.success) {
+      console.log("✅ Success:", response.message);
+    } else {
+      console.warn("⚠️ Failed:", response.message);
+    }
+
+    return response;
+  } catch (error) {
+    console.error("❌ Error in handleNotificationAction:", error);
+    return { success: false, message: "Something went wrong." };
+  }
+}
 
 const DataCount =()=>{
   return User.getAllDataCount()
@@ -42,5 +61,6 @@ module.exports = {
   pushSystemNotification,
   handleNotificationAction,
   DataCount,
-  getNotificationCount
+  getNotificationCount,
+  handleNotificationDecline
 };

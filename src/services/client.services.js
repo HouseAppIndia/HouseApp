@@ -216,9 +216,9 @@ const getReviewById = async (id) => {
 
 
 
-const getAgentsByID = async (id) => {
+const getAgentsByID = async (user_id,agent_id) => {
   try {
-    return await Client.getAgentById(id);
+    return await Client.getAgentById(user_id,agent_id);
   } catch (error) {
     console.error('Error in agentdeel:', error);
     return ({status:httpStatus.INTERNAL_SERVER_ERROR, message:'Failed to get agent detail'});
