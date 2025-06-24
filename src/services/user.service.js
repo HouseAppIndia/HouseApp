@@ -298,6 +298,37 @@ const getAgentsByID = async (id) => {
   }
 };
 
+
+const getAgentViewAnalytics = async () => {
+  try {
+    return await User.getAgentViewCountsPerUser();
+  } catch (error) {
+    console.error('Error in agentdeel:', error);
+    return ({status:httpStatus.INTERNAL_SERVER_ERROR, message:'Failed to get agent detail'});
+  }
+};
+
+
+
+const getFilteredSearchLogs = async () => {
+  try {
+    return await User.getLocalitySearchCounts();
+  } catch (error) {
+    console.error('Error in agentdeel:', error);
+    return ({status:httpStatus.INTERNAL_SERVER_ERROR, message:'Failed to get agent detail'});
+  }
+};
+
+
+const getUsersWhoViewedLocality = async (localityId) => {
+  try {
+    return await User.getUsersWhoViewedLocality(localityId);
+  } catch (error) {
+    console.error('Error in agentdeel:', error);
+    return ({status:httpStatus.INTERNAL_SERVER_ERROR, message:'Failed to get agent detail'});
+  }
+};
+
 const uploadBannerWithImage = async (
   {title,
   image_url,
@@ -401,6 +432,7 @@ const getSelectedBanner =async(id)=>{
 
 module.exports = {
   createUser,
+  getUsersWhoViewedLocality,
   queryUsers,
   getUserById,
   getUserByEmail,
@@ -408,6 +440,7 @@ module.exports = {
   deleteUserById,
   isPasswordMatch,
   getAllUser,
+  getFilteredSearchLogs,
   GetOneUser,
   getAgentsWithDetails,
   getUseDetails,
@@ -423,5 +456,6 @@ module.exports = {
   retrieveAllBanners,
   updateExistingBanner,
   getSelectedBanner,
-  getAgentsByID
+  getAgentsByID,
+  getAgentViewAnalytics
 };

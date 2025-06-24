@@ -450,12 +450,33 @@ const deleteAgents = catchAsync(async (req, res, next) => {
 });
 
 
+const getAgentViewLog =catchAsync(async(req,res)=>{
+  const data =await userService.getAgentViewAnalytics()
+   res.status(200).json({ success: true, data:data});
+})
+
+
+
+
+const getSearchActivityLogs =catchAsync(async(req,res)=>{
+  const data =await userService.getFilteredSearchLogs()
+   res.status(200).json({ success: true, data:data});
+})
+
+
+const getLocalityViewers =catchAsync(async(req,res)=>{
+     const { localityId } = req.params;
+     const viewers = await userService.getUsersWhoViewedLocality(localityId);
+    res.status(200).json({ data: viewers });
+})
 
 
 
 module.exports = {
   register,
+  getLocalityViewers,
   login,
+  getSearchActivityLogs,
   logout,
   refreshTokens,
   forgotPassword,
@@ -490,5 +511,6 @@ module.exports = {
   fetchAllPropertyRequests,
   getAgentsDetails,
   deletedata,
-  deleteAgents
+  deleteAgents,
+  getAgentViewLog
 };

@@ -831,18 +831,25 @@ LIMIT ${parsedPageSize} OFFSET ${offset};`;
 
   async getAllDataCount() {
     try {
-      const [rows] = await pool.query(`
-      SELECT 
-        (SELECT COUNT(*) FROM \`user\`) AS total_users,
-        (SELECT COUNT(*) FROM agents) AS total_agents,
-        (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'whatsapp') AS total_whatsapp,
-        (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'phone') AS total_phone,
+     const [rows] = await pool.query(`
+  SELECT 
+    (SELECT COUNT(*) FROM \`user\`) AS total_users,
+    (SELECT COUNT(*) FROM agents) AS total_agents,
+    (SELECT COUNT(*) FROM agent_views) AS total_agent_views,
+    (SELECT COUNT(*) FROM locality_views) AS total_locality_views,
+    (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'whatsapp') AS total_whatsapp,
+    (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'phone') AS total_phone,
+    (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'map') AS total_googlemap,
 
-        (SELECT COUNT(*) FROM \`user\` WHERE DATE(created_at) = CURDATE()) AS today_users,
-        (SELECT COUNT(*) FROM agents WHERE DATE(created_at) = CURDATE()) AS today_agents,
-        (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'whatsapp' AND DATE(clicked_at) = CURDATE()) AS today_whatsapp,
-        (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'phone' AND DATE(clicked_at) = CURDATE()) AS today_phone;
-    `);
+    (SELECT COUNT(*) FROM \`user\` WHERE DATE(created_at) = CURDATE()) AS today_users,
+    (SELECT COUNT(*) FROM agents WHERE DATE(created_at) = CURDATE()) AS today_agents,
+    (SELECT COUNT(*) FROM agent_views WHERE DATE(viewed_at) = CURDATE()) AS today_agent_views,
+    (SELECT COUNT(*) FROM locality_views WHERE DATE(viewed_at) = CURDATE()) AS today_locality_views,
+    (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'whatsapp' AND DATE(clicked_at) = CURDATE()) AS today_whatsapp,
+    (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'phone' AND DATE(clicked_at) = CURDATE()) AS today_phone,
+    (SELECT COUNT(*) FROM agent_interactions WHERE click_type = 'map' AND DATE(clicked_at) = CURDATE()) AS today_googlemap;
+`);
+
 
       const [users] = await pool.query(`
       SELECT u.id AS userId, u.name AS userName, u.phone AS Phone, t.created_at AS login_time
@@ -1257,6 +1264,7 @@ LIMIT ${parsedPageSize} OFFSET ${offset};`;
   },
   async getDetailedInteractionsByTimeRange(range, page = 1, limit = 10) {
     try {
+      console.log(range)
       let whereCondition;
 
       switch (range) {
@@ -1284,6 +1292,7 @@ LIMIT ${parsedPageSize} OFFSET ${offset};`;
       }
 
       // Calculate offset for pagination
+      console.log(whereCondition)
       const offset = (page - 1) * limit;
 
       // Query with LIMIT and OFFSET
@@ -1302,10 +1311,10 @@ LIMIT ${parsedPageSize} OFFSET ${offset};`;
         JOIN \`user\` u ON ai.user_id = u.id
         WHERE ${whereCondition}
         ORDER BY ai.clicked_at DESC
-        LIMIT ? OFFSET ?;
+        LIMIT ${limit} OFFSET ${offset};
       `;
 
-      const [rows] = await pool.execute(query, [limit, offset]);
+      const [rows] = await pool.execute(query);
 
       const whatsappData = rows.filter(item => item.click_type === 'whatsapp');
       const phoneData = rows.filter(item => item.click_type === 'phone');
@@ -1362,6 +1371,76 @@ LIMIT ${parsedPageSize} OFFSET ${offset};`;
       return { success: false, message: 'Failed to fetch agent.' };
     }
   },
+
+async  getLocalitySearchCounts() {
+  const query = `
+    SELECT 
+      l.id,
+      l.name AS locality_name,
+      COUNT(lv.id) AS search_count
+    FROM localities l
+    LEFT JOIN locality_views lv ON l.id = lv.locality_id
+    GROUP BY l.id, l.name
+    ORDER BY search_count DESC;
+  `;
+  const [rows] = await pool.execute(query);
+  return rows;
+},
+async  getUsersWhoViewedLocality(localityId) {
+    const query = `
+    SELECT 
+      u.id AS user_id,
+      u.name AS user_name,
+      lv.viewed_at,
+      l.name AS locality_name
+    FROM locality_views lv
+    JOIN \`user\` u ON lv.user_id = u.id
+    JOIN localities l ON lv.locality_id = l.id
+    WHERE lv.locality_id = ?
+    ORDER BY lv.viewed_at DESC;
+  `;
+  const [rows] = await pool.execute(query, [localityId]);
+  return rows;
+},
+async getAgentViewCountsPerUser(page = 1, limit = 10) {
+  const offset = (page - 1) * limit;
+
+  const query = `
+    SELECT 
+      u.name AS user_name,
+      a.name AS agent_name,
+      a.phone AS phone_number,
+      COUNT(av.id) AS view_count
+    FROM agent_views av
+    JOIN \`user\` u ON av.user_id = u.id
+    JOIN agents a ON av.agent_id = a.id
+    GROUP BY av.user_id, av.agent_id
+    ORDER BY view_count DESC
+    LIMIT ${limit} OFFSET ${offset};
+  `;
+
+  const [rows] = await pool.execute(query);
+
+  // Optional: get total count for pagination
+  const countQuery = `
+    SELECT COUNT(*) AS total
+    FROM (
+      SELECT av.user_id, av.agent_id
+      FROM agent_views av
+      GROUP BY av.user_id, av.agent_id
+    ) AS grouped_views;
+  `;
+  const [countResult] = await pool.execute(countQuery);
+
+  return {
+    data: rows,
+    currentPage: page,
+    totalPages: Math.ceil(countResult[0].total / limit),
+    totalRecords: countResult[0].total,
+  };
+}
+
+
 
 
 
