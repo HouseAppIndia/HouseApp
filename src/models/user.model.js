@@ -594,77 +594,84 @@ let deleteQuery;
     }
   }
   ,
-  async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id) {
-    console.log(page, pageSize, locationId, "jefj");
+ async getAgentsWithDetails(page, pageSize, locationId, area_id, city_id, startDate, endDate) {
+  console.log(page, pageSize, locationId, startDate, endDate, "recover code");
 
-    try {
-      const parsedPage = parseInt(page, 10);
-      const parsedPageSize = parseInt(pageSize, 10);
-      const offset = (parsedPage - 1) * parsedPageSize;
+  try {
+    const parsedPage = parseInt(page, 10);
+    const parsedPageSize = parseInt(pageSize, 10);
+    const offset = (parsedPage - 1) * parsedPageSize;
 
-      let dataQuery = "";
-      let countQuery = "";
-      let queryParams = [];
-      let countParams = [];
-      console.log(city_id, area_id, locationId)
-      if (city_id === null && area_id === null && locationId === null) {
-        console.log("No location filter");
+    let dataQuery = "";
+    let countQuery = "";
+    let queryParams = [];
+    let countParams = [];
 
-        dataQuery = `
+    let whereConditions = [];
+    let whereClause = "";
+
+    if (city_id === null && area_id === null && locationId === null && !startDate && !endDate) {
+      // No filters — default query
+      dataQuery = `
         SELECT 
-  a.id AS agent_id,
-  a.email,
-  a.name,
-  a.phone,
-  a.status,
-  a.whatsapp_number,
-  a.experience_years,
-  a.rating,
-  a.languages_spoken,
-  oa.address AS office_address,
+          a.id AS agent_id,
+          a.email,
+          a.name,
+          a.agency_name,
+          a.phone,
+          a.status,
+          a.whatsapp_number,
+          a.experience_years,
+          a.rating,
+          a.languages_spoken,
+          oa.address AS office_address,
+          (
+            SELECT COUNT(*) > 0 FROM sponsorships s WHERE s.agent_id = a.id
+          ) AS sponsorship_status,
+          COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls,
+          GROUP_CONCAT(DISTINCT l.name SEPARATOR ', ') AS working_locations,
+          GROUP_CONCAT(DISTINCT l.id SEPARATOR ',') AS working_location_ids
+        FROM agents a
+        LEFT JOIN office_address oa ON a.id = oa.agent_id
+        LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id 
+        LEFT JOIN localities l ON awl.location_id = l.id
+        LEFT JOIN agent_images img ON a.id = img.agent_id
+        GROUP BY a.id
+        LIMIT ${parsedPageSize} OFFSET ${offset};`;
 
-  -- ✅ TRUE if agent has sponsorship in any of their localities
-  (
-    SELECT COUNT(*) > 0
-    FROM sponsorships s
-    WHERE s.agent_id = a.id
-  ) AS sponsorship_status,
+      countQuery = `SELECT COUNT(*) AS total FROM agents;`;
+    } else {
+      // ✅ Add dynamic WHERE conditions
+      if (locationId) {
+        whereConditions.push('awl.location_id = ?');
+        queryParams.push(parseInt(locationId));
+        countParams.push(parseInt(locationId));
+      } else if (area_id) {
+        whereConditions.push('l.area_id = ?');
+        queryParams.push(parseInt(area_id));
+        countParams.push(parseInt(area_id));
+      } else if (city_id) {
+        whereConditions.push('l.city_id = ?');
+        queryParams.push(parseInt(city_id));
+        countParams.push(parseInt(city_id));
+      }
 
-  COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls,
-  GROUP_CONCAT(DISTINCT l.name SEPARATOR ', ') AS working_locations,
-  GROUP_CONCAT(DISTINCT l.id SEPARATOR ',') AS working_location_ids
+      if (startDate && endDate) {
+        whereConditions.push('DATE(a.created_at) BETWEEN ? AND ?');
+        queryParams.push(startDate, endDate);
+        countParams.push(startDate, endDate);
+      }
 
-FROM agents a
-LEFT JOIN office_address oa ON a.id = oa.agent_id
-LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id 
-LEFT JOIN localities l ON awl.location_id = l.id
-LEFT JOIN agent_images img ON a.id = img.agent_id
+      if (whereConditions.length > 0) {
+        whereClause = 'WHERE ' + whereConditions.join(' AND ');
+      }
 
-GROUP BY a.id
-LIMIT ${parsedPageSize} OFFSET ${offset};`;
-        countQuery = `SELECT COUNT(*) AS total FROM agents;`;
-      } else {
-        console.log("With location/area/city filter");
-        let whereClause = '';
-
-        if (locationId) {
-          whereClause = 'WHERE awl.location_id = ?';
-          queryParams.push(parseInt(locationId));
-          countParams.push(parseInt(locationId));
-        } else if (area_id) {
-          whereClause = 'WHERE l.area_id = ?';
-          queryParams.push(parseInt(area_id))
-          countParams.push(parseInt(area_id));
-        } else if (city_id) {
-          whereClause = 'WHERE l.city_id = ?';
-          queryParams.push(parseInt(city_id));
-          countParams.push(parseInt(city_id));
-        }
-
-        dataQuery = `
+      // ✅ Data query
+      dataQuery = `
         SELECT 
           a.id AS agent_id,
           a.name,
+          a.agency_name,
           a.email,
           a.phone,
           a.status,
@@ -673,12 +680,9 @@ LIMIT ${parsedPageSize} OFFSET ${offset};`;
           a.rating,
           a.languages_spoken,
           oa.address AS office_address,
--- ✅ TRUE if agent has sponsorship in any of their localities
-  (
-    SELECT COUNT(*) > 0
-    FROM sponsorships s
-    WHERE s.agent_id = a.id
-  ) AS sponsorship_status,
+          (
+            SELECT COUNT(*) > 0 FROM sponsorships s WHERE s.agent_id = a.id
+          ) AS sponsorship_status,
           COALESCE(JSON_ARRAYAGG(img.image_url), JSON_ARRAY()) AS image_urls,
           GROUP_CONCAT(DISTINCT l.name ORDER BY awl.ranking SEPARATOR ', ') AS working_locations,
           GROUP_CONCAT(DISTINCT awl.ranking ORDER BY awl.ranking SEPARATOR ', ') AS rankings,
@@ -691,89 +695,95 @@ LIMIT ${parsedPageSize} OFFSET ${offset};`;
         ${whereClause}
         GROUP BY a.id
         ORDER BY min_ranking ASC
-        LIMIT ${parsedPageSize} OFFSET ${offset};
-      `;
+        LIMIT ${parsedPageSize} OFFSET ${offset};`;
 
-
-
-        countQuery = `
+      // ✅ Count query
+      countQuery = `
         SELECT COUNT(DISTINCT a.id) AS total
         FROM agents a
         LEFT JOIN agent_working_locations awl ON a.id = awl.agent_id
         LEFT JOIN localities l ON awl.location_id = l.id
-        ${whereClause};
-      `;
-      }
-
-      const [rows] = await pool.execute(dataQuery, queryParams);
-      const [countRows] = locationId === "null"
-        ? await pool.execute(countQuery)
-        : await pool.execute(countQuery, countParams);
-
-      const total = countRows[0].total;
-      const agents = rows.map(agent => {
-  return {
-    ...agent,
-    working_location_ids: agent.working_location_ids
-      ? agent.working_location_ids.split(',').map(Number)
-      : [],
-  };
-});
-
-      return {
-        data: agents,
-        pagination: {
-          total,
-          page: parsedPage,
-          pageSize: parsedPageSize,
-          totalPages: Math.ceil(total / parsedPageSize),
-        },
-      };
-    } catch (error) {
-      console.error("❌ Error in getAgentsWithDetails:", error.message);
-      throw new Error("Failed to get agent details");
+        ${whereClause};`;
     }
-  }
 
+    const [rows] = await pool.execute(dataQuery, queryParams);
+    const [countRows] = (city_id === null && area_id === null && locationId === null && !startDate && !endDate)
+      ? await pool.execute(countQuery)
+      : await pool.execute(countQuery, countParams);
+
+    const total = countRows[0].total;
+    const agents = rows.map(agent => ({
+      ...agent,
+      working_location_ids: agent.working_location_ids
+        ? agent.working_location_ids.split(',').map(Number)
+        : [],
+    }));
+
+    return {
+      data: agents,
+      pagination: {
+        total,
+        page: parsedPage,
+        pageSize: parsedPageSize,
+        totalPages: Math.ceil(total / parsedPageSize),
+      },
+    };
+  } catch (error) {
+    console.error("❌ Error in getAgentsWithDetails:", error.message);
+    throw new Error("Failed to get agent details");
+  }
+}
 
   ,
 
 
-  async getAllUsersWithPagination(page = 1, limit = 10) {
-    try {
-      console.log("Function called");
+  async getAllUsersWithPagination(page = 1, limit = 10, startDate, endDate) {
+  try {
+    console.log("Function called");
 
-      const parsedPage = parseInt(page, 10);
-      const parsedLimit = parseInt(limit, 10);
-      const offset = (parsedPage - 1) * parsedLimit;
+    const parsedPage = parseInt(page, 10);
+    const parsedLimit = parseInt(limit, 10);
+    const offset = (parsedPage - 1) * parsedLimit;
 
-      console.log("Offset:", offset);
+    console.log("Offset:", offset);
 
-      const [countResult] = await pool.execute(`SELECT COUNT(*) AS total FROM \`user\``);
-      console.log("Count result:", countResult);
+    let whereClause = '';
+    let queryParams = [];
 
-      const totalUsers = countResult[0].total;
-      const totalPages = Math.ceil(totalUsers / parsedLimit);
-
-      const [users] = await pool.execute(
-        `SELECT id, name, dob, phone, role, status, location, created_at, updated_at
-        FROM \`user\`
-        ORDER BY created_at DESC
-        LIMIT ${parsedLimit} OFFSET ${offset}` // ✅ Note: directly injected values
-      );
-
-      return {
-        currentPage: parsedPage,
-        totalPages,
-        totalUsers,
-        users,
-      };
-    } catch (error) {
-      console.log(error)
-      console.error("❌ Error fetching paginated users:", error.message);
-      throw new Error("Error fetching paginated users");
+    if (startDate && endDate) {
+      whereClause = 'WHERE DATE(created_at) BETWEEN ? AND ?';
+      queryParams.push(startDate, endDate);
     }
+
+    // Total Count Query
+    const [countResult] = await pool.execute(
+      `SELECT COUNT(*) AS total FROM \`user\` ${whereClause}`, queryParams
+    );
+    const totalUsers = countResult[0].total;
+    const totalPages = Math.ceil(totalUsers / parsedLimit);
+
+    // Data Query
+    const [users] = await pool.execute(
+      `SELECT id, name, dob, phone,email,profile, role, status, location, created_at, updated_at
+       FROM \`user\`
+       ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT ${parsedLimit} OFFSET ${offset}`,
+      [...queryParams]
+    );
+
+    return {
+      currentPage: parsedPage,
+      totalPages,
+      totalUsers,
+      users,
+    };
+  } catch (error) {
+    console.error("❌ Error fetching paginated users:", error.message);
+    throw new Error("Error fetching paginated users");
   }
+}
+
 
   ,
   async NotificationCount() {
@@ -1262,11 +1272,16 @@ LIMIT ${parsedPageSize} OFFSET ${offset};`;
       throw new Error('Failed to fetch user reviews');
     }
   },
-  async getDetailedInteractionsByTimeRange(range, page = 1, limit = 10) {
-    try {
-      console.log(range)
-      let whereCondition;
+ async getDetailedInteractionsByTimeRange(range, startDate, endDate, page, pageSize) {
+  try {
+    console.log('Range:', range, 'Start:', startDate, 'End:', endDate,"page",pageSize,"pageSize");
 
+    let whereCondition;
+
+    if (startDate && endDate) {
+      whereCondition = `DATE(ai.clicked_at) BETWEEN '${startDate}' AND '${endDate}'`;
+    } else {
+      // Handle predefined ranges
       switch (range) {
         case 'today':
           whereCondition = 'DATE(ai.clicked_at) = CURDATE()';
@@ -1290,56 +1305,54 @@ LIMIT ${parsedPageSize} OFFSET ${offset};`;
           console.warn('Invalid or missing range. Defaulting to today.');
           whereCondition = 'DATE(ai.clicked_at) = CURDATE()';
       }
-
-      // Calculate offset for pagination
-      console.log(whereCondition)
-      const offset = (page - 1) * limit;
-
-      // Query with LIMIT and OFFSET
-      const query = `
-        SELECT 
-          ai.agent_id,
-          a.name AS agent_name,
-          a.phone AS agent_phone,
-          ai.user_id,
-          u.name AS user_name,
-          u.phone AS user_phone,
-          ai.click_type,
-          ai.clicked_at
-        FROM agent_interactions ai
-        JOIN agents a ON ai.agent_id = a.id
-        JOIN \`user\` u ON ai.user_id = u.id
-        WHERE ${whereCondition}
-        ORDER BY ai.clicked_at DESC
-        LIMIT ${limit} OFFSET ${offset};
-      `;
-
-      const [rows] = await pool.execute(query);
-
-      const whatsappData = rows.filter(item => item.click_type === 'whatsapp');
-      const phoneData = rows.filter(item => item.click_type === 'phone');
-
-      // Optionally get total count for pagination info
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM agent_interactions ai
-        WHERE ${whereCondition};
-      `;
-      const [[{ total }]] = await pool.execute(countQuery);
-
-      return {
-        total,
-        page,
-        limit,
-        whatsapp: whatsappData,
-        phone: phoneData,
-      };
-
-    } catch (error) {
-      console.error('Error fetching detailed interactions:', error);
-      throw error;
     }
-  },
+
+    const offset = (page - 1) * pageSize;
+
+    const query = `
+      SELECT 
+        ai.agent_id,
+        a.name AS agent_name,
+        a.phone AS agent_phone,
+        ai.user_id,
+        u.name AS user_name,
+        u.phone AS user_phone,
+        ai.click_type,
+        ai.clicked_at
+      FROM agent_interactions ai
+      JOIN agents a ON ai.agent_id = a.id
+      JOIN \`user\` u ON ai.user_id = u.id
+      WHERE ${whereCondition}
+      ORDER BY ai.clicked_at DESC
+      LIMIT ${pageSize} OFFSET ${offset};
+    `;
+
+    const [rows] = await pool.execute(query);
+
+    const whatsappData = rows.filter(item => item.click_type === 'whatsapp');
+    const phoneData = rows.filter(item => item.click_type === 'phone');
+
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM agent_interactions ai
+      WHERE ${whereCondition};
+    `;
+    const [[{ total }]] = await pool.execute(countQuery);
+
+    return {
+      total,
+      page,
+      limit:pageSize,
+      whatsapp: whatsappData,
+      phone: phoneData,
+    };
+
+  } catch (error) {
+    console.error('Error fetching detailed interactions:', error);
+    throw error;
+  }
+}
+,
   // Get user by ID
   async getAgentById(agent_id) {
     try {

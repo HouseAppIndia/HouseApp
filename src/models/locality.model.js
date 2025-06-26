@@ -60,6 +60,7 @@ const localities = {
   async update(id, data) {
     try {
       console.log('Updating locality id:', id);
+      console.log(data)
       const name = data?.name;
       const city_id = data.cityId;
       const area_id = data.areaId !== undefined ? data.areaId : null;

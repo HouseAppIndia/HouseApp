@@ -4,6 +4,7 @@ const validate = require('../../middlewares/validate');
 const userValidation = require('../../validations/user.validation');
 const userController = require('../../controllers/user.controller');
 const bookmarkController =require('../../controllers/bookmark.controller')
+const ProfileController =require('../../controllers/profil.controller')
 const uploadImage =require('../../middlewares/UploadBanner')
 
 const router = express.Router();
@@ -13,7 +14,8 @@ router.post('/register', userController.createUser);
 router.post('/login', userController.login);
 router.post('/verify-otp', userController.handleOtpVerification)
 router.post('/resent-otp', userController.regenerateOtp)
-router.patch('/profile', userAuth, userController.updateProfile);
+router.patch('/profile', userAuth,uploadImage.single('image'), userController.updateProfile);
+router.get('/profile', userAuth,ProfileController.getUserProfile);
 router.get("/by-location",userAuth, userController.getAgentsByLocation)
 router.get("/agent-detail/:id",userAuth, userController.getAgentsDetails)
 router.post("/interactions/click", userAuth, userController.recordUserClick);

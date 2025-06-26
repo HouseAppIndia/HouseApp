@@ -80,7 +80,7 @@ const addEmployee = catchAsync(async (req, res) => {
     email: data.email,
     managerId: data.managerId || null,
     role: "manager",
-    password: `${data.name}@123`,
+    password: data.password,
   };
   console.log(formatted)
   const user = await userService.createUser(formatted);
@@ -118,17 +118,19 @@ const deleteEmployee = catchAsync(async (req, res) => {
 
 
 const getAllAgents = catchAsync(async (req, res) => {
-  console.log(req.query, "GGGGGG")
+  console.log("red")
   const page = parseInt(req.query.page, 10) || 1;
-  const pageSize = parseInt(req.query.pageSize,) || 10;
- const area_id = req.query.area_id ? req.query.area_id==="null"?null:req.query.area_id : null;
-const city_id = req.query.city_id ? req.query.city_id==="null"?null:req.query.city_id : null;
-const locationId = req.query.locationId ? req.query.locationId=="null"?null:req.query.locationId : null;
- console.log(city_id,"city_id")
+  const pageSize = parseInt(req.query.pageSize, 10) || 10;
 
-  const agents = await userService.getAgentsWithDetails(page, pageSize, locationId,area_id,city_id);
+  const area_id = req.query.area_id && req.query.area_id !== 'null' ? req.query.area_id : null;
+  const city_id = req.query.city_id && req.query.city_id !== 'null' ? req.query.city_id : null;
+  const locationId = req.query.locationId && req.query.locationId !== 'null' ? req.query.locationId : null;
 
-console.log(agents.working_location_ids,"jnkds")
+  const startDate = req.query.startDate && req.query.startDate !== 'null' ? req.query.startDate : null;
+  const endDate = req.query.endDate && req.query.endDate !== 'null' ? req.query.endDate : null;
+
+  console.log({ startDate, endDate });
+  const agents = await userService.getAgentsWithDetails(page, pageSize, locationId,area_id,city_id,startDate,endDate);
   res.status(httpStatus.OK).json({
     success: true,
     message: 'Agents fetched successfully',
@@ -141,7 +143,10 @@ const getAllUsers = catchAsync(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const pageSize = parseInt(req.query.pageSize,) || 10;
 
-  const agents = await userService.getUseDetails(page, pageSize);
+  const startDate = req.query.startDate !== 'null' ? req.query.startDate : null;
+  const endDate = req.query.endDate !== 'null' ? req.query.endDate : null;
+
+  const agents = await userService.getUseDetails(page, pageSize,startDate,endDate);
 
   res.status(httpStatus.OK).json({
     success: true,
@@ -325,9 +330,13 @@ const getAllUserReviews = catchAsync(async (req, res) => {
 
 
 const getAgentInteractionLogs = catchAsync(async (req, res) => {
-  const range = req.query.range || "today"
+  const range = req.query.range || 'today';
+  const startDate = req.query.startDate !== 'null' ? req.query.startDate : null;
+  const endDate = req.query.endDate !== 'null' ? req.query.endDate : null;
+  const page = parseInt(req.query.page) || 1;
+  const pageSize = parseInt(req.query.pageSize) || 10;
 
-  const result = await userService.fetchInteractionHistory(range);
+  const result = await userService.fetchInteractionHistory(range, startDate, endDate, page, pageSize);
   res.status(201).json({ result });
 })
 
@@ -450,6 +459,33 @@ const deleteAgents = catchAsync(async (req, res, next) => {
 });
 
 
+
+const deleteUser = catchAsync(async (req, res, next) => {
+  const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ success: false, message: "User ID is required" });
+  }
+  const [result] = await pool.execute("DELETE FROM user WHERE id = ?", [id]);
+  if (result.affectedRows === 0) {
+    return res.status(404).json({ success: false, message: "User not found or already deleted" });
+  }
+  res.status(200).json({ success: true, message: "User deleted successfully" });
+});
+
+
+const deleteReview =catchAsync(async(req,res)=>{
+   const id = req.params.id;
+  if (!id) {
+    return res.status(400).json({ success: false, message: "user_review id is required" });
+  }
+  const [result] = await pool.execute('DELETE FROM user_review WHERE id = ?', [id]);
+   if (result.affectedRows === 0) {
+    return res.status(404).json({ success: false, message: "user_review not found or already deleted" });
+  }
+  res.status(200).json({ success: true, message: "user_review deleted successfully" });
+
+})
+
 const getAgentViewLog =catchAsync(async(req,res)=>{
   const data =await userService.getAgentViewAnalytics()
    res.status(200).json({ success: true, data:data});
@@ -487,6 +523,8 @@ module.exports = {
   addEmployee,
   getAllEmployees,
   getEmployee,
+  deleteUser,
+  deleteReview,
   updateEmployee,
   deleteEmployee,
   getAllAgents,

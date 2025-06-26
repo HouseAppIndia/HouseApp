@@ -34,8 +34,8 @@ const updateLocalityById = async (id, updateData) => {
   if (!locality) {
     throw new ApiError(404, `Locality with ID ${id} not found`);
   }
-
-  await locality.update(updateData); // Assuming Sequelize model instance
+  console.log(id)
+  await localities.update(id,updateData); // Assuming Sequelize model instance
   return locality;
 };
 

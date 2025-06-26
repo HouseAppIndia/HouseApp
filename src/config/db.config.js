@@ -34,6 +34,8 @@ async function createUserTable() {
       name VARCHAR(100),
       dob DATE,
       phone VARCHAR(20) UNIQUE,
+      email VARCHAR(20) UNIQUE,
+      profile VARCHAR(20),
       role VARCHAR(50) DEFAULT 'users',
       status BOOLEAN DEFAULT FALSE,
       location TEXT,

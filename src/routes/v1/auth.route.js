@@ -42,6 +42,8 @@ router.route('/banners/:id').patch(uploadImage.single("image"),authController.up
 router.route('/propteryrequest').get(authController.fetchAllPropertyRequests)
 router.route('/agent-detail/:id').get(authController.getAgentsDetails)
 router.route('/agent-detail/:id').delete(authController.deleteAgents)
+router.route('/users-detail/:id').delete(authController.deleteUser)
+router.route('/review/:id').delete(authController.deleteReview)
 router.route('/agents/:agentId/sponsorships').post(SponserController.createSponsorship)
 router.route('/agent-view-log').get(authController.getAgentViewLog)
 router.route('/search-activity-log').get(authController.getSearchActivityLogs)

@@ -37,8 +37,9 @@ const regenerateOtp = catchAsync(async (req, res) => {
 const updateProfile = catchAsync(async (req, res) => {
   const user_id = req.user.userId;
   const userBody = req.body;
+   const imagePaths = req.files.map(file => `image/${file.filename}`);
 
-  const data = await ClientService.handleUpdateProfile(user_id, userBody);
+  const data = await ClientService.handleUpdateProfile(user_id, userBody,imagePaths);
 
   res.status(200).json({
     success: true,
@@ -111,7 +112,7 @@ const createReview = catchAsync(async (req, res) => {
   }
 
  // Store all image paths
-    const imagePaths = req.files.map(file => `images/${file.filename}`);
+    const imagePaths = req.files.map(file => `image/${file.filename}`);
 
     // Save as array or comma-separated string, depending on your DB design
 

@@ -225,8 +225,8 @@ const getAgentsByID = async (user_id,agent_id) => {
   }
 };
 
-const handleUpdateProfile =(Id, userBody)=>{
-  return Client.updateUserById(Id, userBody)
+const handleUpdateProfile =(Id, userBody,imagePaths)=>{
+  return Client.updateUserById(Id, userBody,imagePaths)
 }
 
 const retrieveActiveBanners =async(city_id)=>{

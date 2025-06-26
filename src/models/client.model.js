@@ -370,7 +370,7 @@ async getAllReviews({ agent_id } = {}) {
   },
 
   // Update user details
-  async updateUserById(userId, updates) {
+  async updateUserById(userId, updates,imagePaths) {
     console.log(userId, "gg")
     try {
       const fields = [];
@@ -392,7 +392,16 @@ async getAllReviews({ agent_id } = {}) {
         console.log(JSON.stringify(updates.location))
         values.push(JSON.stringify(updates.location));
       }
+      
+      if(imagePaths){
+        fields.push('profile = ?');
+        values.push(JSON.stringify(imagePaths));
+      }
 
+        if(updates.email){
+        fields.push('email = ?');
+        values.push(JSON.stringify(updates.email));
+      }
       if (!fields.length) return { success: false, message: 'No valid fields provided to update.' };
 
       // fields.push('updatedAt = CURRENT_TIMESTAMP');

@@ -92,17 +92,17 @@ const isPasswordMatch = async (password, hashedPassword) => {
   }
 };
 
-const getAgentsWithDetails = async (page, pageSize,locationId,area_id,city_id) => {
+const getAgentsWithDetails = async (page, pageSize,locationId,area_id,city_id,startDate,endDate) => {
   try {
-    return await User.getAgentsWithDetails(page, pageSize,locationId,area_id,city_id);
+    return await User.getAgentsWithDetails(page, pageSize,locationId,area_id,city_id,startDate,endDate);
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to get agent details');
   }
 };
 
-const getUseDetails = async (page, pageSize) => {
+const getUseDetails = async (page, pageSize,startDate,endDate) => {
   try {
-    return await User.getAllUsersWithPagination(page, pageSize);
+    return await User.getAllUsersWithPagination(page, pageSize,startDate,endDate);
   } catch (error) {
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to get user details');
   }
@@ -275,9 +275,9 @@ const fetchAllUserReviews=async(page,limit)=>{
 }
 
 
-const fetchInteractionHistory=async(range)=>{
+const fetchInteractionHistory=async(range, startDate, endDate, page, pageSize)=>{
   try{
-     const data =await User.getDetailedInteractionsByTimeRange(range)
+     const data =await User.getDetailedInteractionsByTimeRange(range, startDate, endDate, page, pageSize)
      return data
    }catch(error){
      return {
