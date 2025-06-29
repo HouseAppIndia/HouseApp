@@ -279,10 +279,22 @@ const getAgentsByLocationwitoutlogin = async (locationId) => {
 
 
 
+const getUserByID = async (user_id) => {
+  try {
+    return await Client.getUserById(user_id);
+  } catch (error) {
+    console.error('Error in agentdeel:', error);
+    return ({status:httpStatus.INTERNAL_SERVER_ERROR, message:'Failed to get agent detail'});
+  }
+};
+
+
+
 module.exports = {
   createUser,
   loginUserWithPhone,
   verifyUserOtp,
+  getUserByID,
   resendOtp,
   updateUserProfile,
   deactivateUserAccount,

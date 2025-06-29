@@ -485,7 +485,34 @@ async  recordLocalityView(user_id, locality_id) {
     VALUES (?, ?)
   `;
   return await pool.execute(query, [user_id, locality_id]);
+},
+async  getUserById(userId) {
+  try {
+    const query = `
+      SELECT 
+        id,
+        name,
+        dob,
+        phone,
+        email,
+        profile,
+        role,
+        status,
+        location,
+        created_at,
+        updated_at
+      FROM user
+      WHERE id = ?
+    `;
+
+    const [rows] = await pool.execute(query, [userId]);
+    return rows.length ? rows[0] : null;
+  } catch (error) {
+    console.error("Error in getUserById:", error);
+    throw error;
+  }
 }
+
 
 };
 

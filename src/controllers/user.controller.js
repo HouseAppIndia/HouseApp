@@ -263,11 +263,18 @@ const getAgentsByLocationwitoutlogin =catchAsync(async(req,res)=>{
 })
 
 
+const getUserDetail = catchAsync(async (req, res) => {
+  const User_id = req.params.id
+  if (!User_id) return { message: "id is required" }
+  const agentdetail = await ClientService.getUserByID(User_id)
+  res.status(200).send(agentdetail)
+})
 
 
 module.exports = {
   createUser,
   createReview,
+  getUserDetail,
   updateReview,
   deleteReview,
   getAllReviews,
