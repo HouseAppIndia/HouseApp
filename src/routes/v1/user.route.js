@@ -17,6 +17,7 @@ router.post('/resent-otp', userController.regenerateOtp)
 router.patch('/profile', userAuth,uploadImage.single('image'), userController.updateProfile);
 router.get('/profile', userAuth,ProfileController.getUserProfile);
 router.get("/by-location",userAuth, userController.getAgentsByLocation)
+router.get("/public/by-location", userController.getAgentsByLocationwitoutlogin);
 router.get("/agent-detail/:id",userAuth, userController.getAgentsDetails)
 router.post("/interactions/click", userAuth, userController.recordUserClick);
 router.delete('/delete-account', userAuth, userController.deleteAccountHandler);

@@ -79,8 +79,8 @@ const Client = {
   },
 
   // Get agents working at a location
-async getAgentsByLocation(locationId, userId, limit, offset = 0) {
-  console.log(locationId, userId, limit, offset = 0,"hhuuhu")
+async getAgentsByLocationwitoutlogin(locationId, limit, offset = 0) {
+  console.log(locationId, limit, offset = 0,"hello sir g")
   try {
     if (!locationId) {
       return { success: false, message: 'Location ID is required.', data: [] };
@@ -100,12 +100,6 @@ async getAgentsByLocation(locationId, userId, limit, offset = 0) {
         a.languages_spoken,
         oa.address AS office_address,
         MIN(awl.ranking) AS min_ranking,
-        (
-          SELECT COUNT(*) 
-          FROM bookmarks b 
-          WHERE b.user_id = ${userId} AND b.agent_id = a.id
-        ) AS isBookmarked,
-
         (
       SELECT COUNT(*) > 0
       FROM sponsorships s
@@ -127,8 +121,6 @@ async getAgentsByLocation(locationId, userId, limit, offset = 0) {
       const values = [locationId];
 
     const [rows] = await pool.execute(query, values);
-   this.recordLocalityView(userId,locationId)
-    // Optional: convert image_urls string to array
     const formatted = rows.map(row => ({
       ...row,
       image_urls: typeof row.image_urls === 'string'

@@ -256,6 +256,15 @@ const createPropertyRequest = catchAsync(async (req, res) => {
 });
 
 
+const getAgentsByLocationwitoutlogin =catchAsync(async(req,res)=>{
+  if (!req?.query?.locationId) return res.status(httpStatus.BAD_REQUEST).json({ message: "Location is required" });
+  const user = await ClientService.getAgentsByLocationwitoutlogin(req.query.locationId);
+  res.status(httpStatus.CREATED).send(user);
+})
+
+
+
+
 module.exports = {
   createUser,
   createReview,
@@ -273,5 +282,6 @@ module.exports = {
   verifyAndDeleteAccount,
   getAgentsDetails,
   getActiveBanners,
-  createPropertyRequest
+  createPropertyRequest,
+  getAgentsByLocationwitoutlogin
 };
