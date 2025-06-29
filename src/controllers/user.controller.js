@@ -37,7 +37,12 @@ const regenerateOtp = catchAsync(async (req, res) => {
 const updateProfile = catchAsync(async (req, res) => {
   const user_id = req.user.userId;
   const userBody = req.body;
-   const imagePaths = req.files.map(file => `image/${file.filename}`);
+  console.log(user_id)
+  console.log(req.body)
+  console.log(req.file)
+   const imagePaths = `/image/${req.file?.filename}`
+   console.log(imagePaths)
+
 
   const data = await ClientService.handleUpdateProfile(user_id, userBody,imagePaths);
 

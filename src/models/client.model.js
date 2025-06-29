@@ -363,7 +363,8 @@ async getAllReviews({ agent_id } = {}) {
 
   // Update user details
   async updateUserById(userId, updates,imagePaths) {
-    console.log(userId, "gg")
+    console.log(userId,updates,imagePaths, "gg")
+    console.log(updates.name)
     try {
       const fields = [];
       const values = [];
@@ -397,9 +398,9 @@ async getAllReviews({ agent_id } = {}) {
       if (!fields.length) return { success: false, message: 'No valid fields provided to update.' };
 
       // fields.push('updatedAt = CURRENT_TIMESTAMP');
-      values.push(userId);
+      // values.push(userId);
 
-      const [result] = await pool.execute(`UPDATE user SET ${fields.join(', ')} WHERE id = ?`, values);
+      const [result] = await pool.execute(`UPDATE user SET ${fields.join(', ')} WHERE id = ${userId}`, values);
       if (!result.affectedRows) return { success: false, message: 'User not found or no changes made.' };
 
       return { success: true, message: 'User profile updated successfully.' };
