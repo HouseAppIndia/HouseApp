@@ -1,16 +1,16 @@
 const multer = require('multer');
-const cloudinary = require('../config/cloudinary');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'agent_profile',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-    transformation: [{ width: 500, height: 500, crop: 'limit' }],
+const path =require('path')
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, '../../public/logo')); // go 2 levels up to reach /public/images
   },
+  filename: function (req, file, cb) {
+    console.log(file)
+    const uniqueName = Date.now() + '-' + file.originalname;
+    cb(null, uniqueName);
+  }
 });
 
-const upload = multer({ storage });
+const uploadImage = multer({ storage: storage });
 
-module.exports = upload;
+module.exports=uploadImage

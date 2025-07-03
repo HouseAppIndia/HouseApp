@@ -45,6 +45,7 @@ const updateProfile = catchAsync(async (req, res) => {
 
 
   const data = await ClientService.handleUpdateProfile(user_id, userBody,imagePaths);
+  console.log(data)
 
   res.status(200).json({
     success: true,

@@ -5,8 +5,8 @@ const Cities = {
   // CREATE
   async create(data) {
     try {
-      const query = 'INSERT INTO cities (name) VALUES (?)';
-      const [result] = await pool.execute(query, [data.name]);
+     const query = 'INSERT INTO cities (name, image) VALUES (?, ?)';
+      const [result] = await pool.execute(query, [data.name, data.image]);
       return { insertId: result.insertId };
     } catch (error) {
       console.error('Error in Cities.create:', error);
@@ -40,17 +40,37 @@ const Cities = {
   },
 
   // UPDATE
-  async update(id, updateData) {
-    try {
-      console.log('Updating city id:', id, 'with data:', updateData);
-      const query = 'UPDATE cities SET name = ? WHERE id = ?';
-      const [result] = await pool.execute(query, [updateData.name, id]);
-      return { affectedRows: result.affectedRows };
-    } catch (error) {
-      console.error('Error in Cities.update:', error);
-      return { error: error.message };
+  async updateCity(id, updateData) {
+  try {
+    const fields = [];
+    const values = [];
+
+    if (updateData.name) {
+      fields.push('name = ?');
+      values.push(updateData.name);
     }
-  },
+
+    if (updateData.image) {
+      fields.push('image = ?');
+      values.push(updateData.image);
+    }
+
+    // If no fields to update, return early
+    if (fields.length === 0) {
+      return { message: 'No fields to update' };
+    }
+
+    const query = `UPDATE cities SET ${fields.join(', ')} WHERE id = ?`;
+    values.push(id); // ID goes last
+    console.log('Updating city id:', id, 'with data:', updateData);
+
+    const [result] = await pool.execute(query, values);
+    return { affectedRows: result.affectedRows };
+  } catch (error) {
+    console.error('Error updating city:', error);
+    return { error: error.message };
+  }
+},
 
   // DELETE
   async destroy(id) {

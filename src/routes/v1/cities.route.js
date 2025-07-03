@@ -1,16 +1,18 @@
 const express = require('express');
 const citiesController = require('../../controllers/cities.controller')
 const auth =require('../../middlewares/auth')
+const uploadImage=require('../../middlewares/upload');
+
 
 const router = express.Router();
 
 router.route('/cities')
     .get(citiesController.fetchAllCities)
-    .post(auth,citiesController.createCity);
+    .post(auth, uploadImage.single('image'),citiesController.createCity);
 
 router.route('/cities/:id')
     .get(citiesController.fetchCityById)
-    .put(auth,citiesController.updateCity)
+    .put(auth,uploadImage.single('image'),citiesController.updateCity)
     .delete(auth,citiesController.deleteCity);
 
 

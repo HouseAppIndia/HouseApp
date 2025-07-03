@@ -4,7 +4,6 @@ const authValidation = require('../../validations/auth.validation');
 const agentController = require('../../controllers/agent.controller');
 const ProfileController =require('../../controllers/profil.controller')
 const userAuth = require('../../middlewares/auth');
-const upload =require('../../middlewares/upload')
 const uploadImage =require('../../middlewares/UploadBanner')
 
 const router = express.Router();

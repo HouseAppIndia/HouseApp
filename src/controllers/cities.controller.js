@@ -27,7 +27,11 @@ const fetchCityById = catchAsync(async (req, res) => {
  * Add a new city
  */
 const createCity = catchAsync(async (req, res) => {
-    const data = await cityService.createCity(req.body);
+      const cityData = {
+    ...req.body,
+    image: `/logo/${req.file?.filename|| null} ` // Safely add image filename if uploaded
+  };
+    const data = await cityService.createCity(cityData);
     res.status(httpStatus.CREATED).send({ message: 'City created successfully', city: data });
 });
 
@@ -36,7 +40,11 @@ const createCity = catchAsync(async (req, res) => {
  */
 const updateCity = catchAsync(async (req, res) => {
     const { id } = req.params;
-    const data = await cityService.updateCityById(id, req.body);
+      const cityData = {
+    ...req.body,
+    image: `/logo/${req.file?.filename|| null} ` // Safely add image filename if uploaded
+  };
+    const data = await cityService.updateCityById(id, cityData);
     res.status(httpStatus.OK).send({ message: 'City updated successfully', city: data });
 });
 

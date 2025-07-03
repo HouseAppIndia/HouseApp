@@ -18,10 +18,8 @@ const createCity = async (data) => {
 };
 
 const updateCityById = async (id, updateData) => {
-  console.log(id,updateData)
   const city = await  City.findByPk(id);
-  console.log(city)
-  return City.update(id,updateData);
+  return City.updateCity(id,updateData);
 };
 
 const deleteCityById = async (id) => {

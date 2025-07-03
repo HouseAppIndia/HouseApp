@@ -234,7 +234,8 @@ async function AddCity() {
   const query = `
     CREATE TABLE IF NOT EXISTS cities (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(100) NOT NULL UNIQUE
+      name VARCHAR(100) NOT NULL UNIQUE,
+      image VARCHAR(255)
     );
   `;
   await pool.execute(query);
