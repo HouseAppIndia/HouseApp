@@ -35,6 +35,8 @@ const regenerateOtp = catchAsync(async (req, res) => {
 })
 
 const updateProfile = catchAsync(async (req, res) => {
+  console.log(req.user)
+  console.log(req.file)
   const user_id = req.user.userId;
   const userBody = req.body;
   console.log(user_id)

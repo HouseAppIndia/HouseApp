@@ -363,8 +363,10 @@ async getAllReviews({ agent_id } = {}) {
 
   // Update user details
   async updateUserById(userId, updates,imagePaths) {
-    console.log(userId,updates,imagePaths, "gg")
-    console.log(updates.name)
+    console.log(userId,"userId")
+    console.log(updates,"updates")
+    console.log(imagePaths,"imagePaths")
+
     try {
       const fields = [];
       const values = [];
@@ -387,6 +389,7 @@ async getAllReviews({ agent_id } = {}) {
       }
       
       if(imagePaths){
+        console.log(imagePaths)
         fields.push('profile = ?');
         values.push(JSON.stringify(imagePaths));
       }
