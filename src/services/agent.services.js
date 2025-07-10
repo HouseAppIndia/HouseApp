@@ -94,9 +94,13 @@ const verifyOtp = async (phone, otp) => {
 
     // Verify OTP
     const verificationResult = await Agent.getOtpByUserId(user.id, otp);
+    console.log(verificationResult,"jjj")
 
-    if (verificationResult.error) {
-      return { error: true, message: verificationResult.error };
+      if (!verificationResult || verificationResult.success === false) {
+       return {
+        success: false,
+        message: verificationResult?.message || 'Invalid or expired OTP'
+      };;
     }
 
     return {

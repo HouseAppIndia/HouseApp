@@ -314,6 +314,7 @@ async getAllReviews({ agent_id } = {}) {
 
   // Save OTP to DB
   async isSaveOtp(userId, otp, expiresAt) {
+    console.log("hello",userId,otp,expiresAt)
     try {
       const [result] = await pool.execute(
         'INSERT INTO otps (user_id, otp_code, expires_at) VALUES (?, ?, ?)',
@@ -330,12 +331,14 @@ async getAllReviews({ agent_id } = {}) {
   // Validate and verify OTP
   async getOtpByUserId(userId, otp) {
     try {
+      console.log(userId,otp)
       const now = moment().format('YYYY-MM-DD HH:mm:ss');
       const [otpRows] = await pool.execute(
         `SELECT * FROM otps 
          WHERE user_id = ? AND otp_code = ? AND verified = FALSE AND expires_at > ?`,
         [userId, otp, now]
       );
+      console.log(otpRows,"jjj")
 
       if (!otpRows.length) return { success: false, message: 'Invalid or expired OTP.' };
 

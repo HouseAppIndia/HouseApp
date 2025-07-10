@@ -19,10 +19,18 @@ const handleOtpVerification = catchAsync(async (req, res) => {
   if (!/^\d{10}$/.test(phone)) {
     return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
   }
-  const data = await ClientService.verifyUserOtp(phone, otp)
-  console.log(data.user,"hjjj")
-  const tokens = await tokenService.generateAuthTokens(data.user.data);
-  res.status(200).json({ message: data.message,UserId:data.user.data.id,role:data.user.data.role, tokens });
+    // Check for success flag in returned data
+      const data = await ClientService.verifyUserOtp(phone, otp);
+  if (data.success === false) {
+    return res.status(400).json({ message: data.message }); // OTP failed
+  }
+    const tokens = await tokenService.generateAuthTokens(data.user);
+  return res.status(200).json({
+    message: data.message,
+    UserId: data.user.id,
+    role: data.user.role,
+    tokens,
+  });
 })
 
 const regenerateOtp = catchAsync(async (req, res) => {

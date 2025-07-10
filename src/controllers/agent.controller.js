@@ -54,7 +54,10 @@ const handleOtpVerification = catchAsync(async (req, res) => {
     phone = `+91${phone}`;
   }
   const data = await agentService.verifyOtp(phone, otp)
-  console.log(data)
+   // Check for success flag in returned data
+  if (data.success === false) {
+    return res.status(400).json({ message: data.message }); // OTP failed
+  }
   const tokens = await tokenService.generateAuthTokens(data.user);
   res.status(200).json({ message: data.message, agentId: data.user.id, role: data.user.role, tokens });
 })

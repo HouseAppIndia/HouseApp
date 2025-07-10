@@ -33,7 +33,6 @@ const loginUserWithPhone = async (phone) => {
     console.log(user, "jjjj")
 
     if (user.success == false) {
-
       user = await Client.create(PHONE_NUMBER);
 
     }
@@ -42,7 +41,7 @@ const loginUserWithPhone = async (phone) => {
     const otp = 123456
     const expiresAt = moment().add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss');
 
-    await Client.isSaveOtp(user.id, otp, expiresAt);
+    await Client.isSaveOtp(user.data.id, otp, expiresAt);
     // await sendOTP(PHONE_NUMBER, otp);
 
     return { message: 'Login OTP sent successfully' };
@@ -61,12 +60,21 @@ const verifyUserOtp = async (phone, otp) => {
       throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
     }
 
-    const verificationResult = await Client.getOtpByUserId(user.id, otp);
-    if (!verificationResult) {
-      throw new ApiError(httpStatus.BAD_REQUEST, 'Invalid or expired OTP');
+    const verificationResult = await Client.getOtpByUserId(user.data.id, otp);
+    if (!verificationResult  || verificationResult.success === false) {
+       return {
+        success: false,
+        message: verificationResult?.message || 'Invalid or expired OTP'
+      };
     }
 
-    return { message: 'OTP verified successfully', user };
+
+    console.log(verificationResult,"verificationResult")
+    return {
+      success: true,
+      message: 'OTP verified successfully',
+      user: user.data
+    };
   } catch (error) {
     console.error('Error in verifyUserOtp:', error);
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error.message || 'Failed to verify OTP');
