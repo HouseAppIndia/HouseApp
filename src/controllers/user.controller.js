@@ -3,6 +3,7 @@ const pick = require('../utils/pick');
 const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { ClientService, authService, tokenService,PropertyRequestService } = require('../services');
+const pool = require('../config/db.config');
 
 const createUser = catchAsync(async (req, res) => {
   console.log(req.body)
@@ -286,6 +287,50 @@ const getUserDetail = catchAsync(async (req, res) => {
   res.status(200).send(agentdetail)
 })
 
+const handleGoogleCallback = async (req, res) => {
+  try {
+    const profile = req.user;
+    const email = profile.emails[0].value;
+    const name = profile.displayName;
+    const profilePic = profile.photos[0]?.value;
+
+    // 1. Check if user already exists
+    const [rows] = await pool.execute('SELECT * FROM user WHERE email = ?', [email]);
+    let user;
+
+    if (rows.length === 0) {
+      // 2. If not, create new user
+      const [result] = await pool.execute(
+        'INSERT INTO user (name, email, profile, status, role) VALUES (?, ?, ?, ?, ?)',
+        [name, email, profilePic, true, 'users']
+      );
+      user = {
+        id: result.insertId,
+        name,
+        email,
+        profile: profilePic,
+        role: 'users',
+      };
+    } else {
+      // 3. If user exists, use it
+      user = rows[0];
+    }
+     const tokens = await tokenService.generateAuthTokens(user);
+
+    // 5. Send response
+    res.status(200).json({
+      success: true,
+      message: 'Google login successful',
+      user,
+      tokens,
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+
 
 module.exports = {
   createUser,
@@ -306,5 +351,6 @@ module.exports = {
   getAgentsDetails,
   getActiveBanners,
   createPropertyRequest,
-  getAgentsByLocationwitoutlogin
+  getAgentsByLocationwitoutlogin,
+  handleGoogleCallback 
 };

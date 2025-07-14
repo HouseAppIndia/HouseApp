@@ -60,7 +60,8 @@ const loginUserWithEmailAndPassword = async (phone) => {
     if (!user || !user.id) {
       user = await Agent.create(phone); // update the existing `user` variable
     }
-
+     
+    console.log(user)
     // Send OTP
     const otp = 123456;
     const expiresAt = moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");

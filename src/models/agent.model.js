@@ -38,9 +38,7 @@
                     message: 'Agent created successfully',
                     success: true,
                     id: result.insertId,
-                    name,
                     phone,
-                    email
                 
                 };
             } catch (error) {

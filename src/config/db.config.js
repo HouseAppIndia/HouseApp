@@ -425,6 +425,20 @@ async function createLocalitiesViewsTable() {
   await pool.execute(query);
 }
 
+async function AddBankDetail(params) {
+  const query=`CREATE TABLE IF NOT EXISTS payment_details (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  qr_code LONGBLOB,                          -- QR image (optional)
+  qr_code_url VARCHAR(255),                  -- Optional: path or URL to QR code
+  bank_account_number VARCHAR(50),
+  ifsc_code VARCHAR(20),
+  bank_name VARCHAR(100),
+  account_holder_name VARCHAR(100),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);`
+  await pool.execute(query)
+}
 
 
 
@@ -459,6 +473,7 @@ async function initializeDatabase() {
     await BuySellExpert()
     await createAgentViewsTable()
     await createLocalitiesViewsTable()
+    await AddBankDetail()
     console.log("✅ All tables created successfully!");
   } catch (err) {
     console.error("❌ Error initializing database:", err);

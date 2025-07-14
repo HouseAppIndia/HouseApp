@@ -19,5 +19,9 @@ router.post('/working-locations',userAuth,agentController.AddWorkingLocation)
 router.get('/working-locations',userAuth,ProfileController.getAgentWorkingLocations)
 router.post('/office-address',userAuth, agentController.createOrUpdateAddress);
 router.get('/office-address',userAuth, ProfileController.getOfficeAddressByAgentId);
+
+
+
+
 module.exports = router;
 

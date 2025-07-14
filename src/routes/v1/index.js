@@ -7,6 +7,7 @@ const docsRoute = require('./docs.route');
 const config = require('../../config/config');
 const CitiesRoute =require('./cities.route')
 const Static_Content =require('./staticContent.routes')
+const googleAuhtRoute =require('./goole.auth.route')
 
 const router = express.Router();
 
@@ -26,6 +27,10 @@ const defaultRoutes = [
   {
     path: '/auth/users',
     route: userRoute,
+  },
+   {
+    path: '/auth/user',
+    route: googleAuhtRoute,
   },
   {
     path: '/auth',

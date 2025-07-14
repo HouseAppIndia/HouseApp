@@ -15,6 +15,7 @@ const routes = require('./routes/v1');
 const { errorConverter, errorHandler } = require('./middlewares/error');
 const ApiError = require('./utils/ApiError');
 const path = require('path');
+require('./middlewares/passport')
 
 const app = express();
 console.log(__dirname)
@@ -32,6 +33,9 @@ app.use(express.json());
 // parse urlencoded request body
 app.use(express.urlencoded({ extended: true }));
 app.use('/public', express.static(path.join(__dirname, '..', 'public')));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // sanitize request data
 app.use(xss());

@@ -36,12 +36,13 @@ const loginUserWithPhone = async (phone) => {
       user = await Client.create(PHONE_NUMBER);
 
     }
+    console.log(user)
 
     // const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otp = 123456
     const expiresAt = moment().add(5, 'minutes').format('YYYY-MM-DD HH:mm:ss');
 
-    await Client.isSaveOtp(user.data.id, otp, expiresAt);
+    await Client.isSaveOtp(user.data.id||user.id, otp, expiresAt);
     // await sendOTP(PHONE_NUMBER, otp);
 
     return { message: 'Login OTP sent successfully' };

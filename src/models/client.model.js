@@ -32,11 +32,15 @@ const Client = {
         'INSERT INTO user (phone) VALUES (?)',
         [PHONE_NUMBER]
       );
-
+     console.log(result)
+     console.log(result.insertId)
       return {
+         
         success: true,
-        id: result.insertId,
+        data:{
+         id: result.insertId,
         phone: PHONE_NUMBER,
+        },  
         message: 'User created successfully.',
       };
     } catch (error) {
@@ -321,6 +325,7 @@ async getAllReviews({ agent_id } = {}) {
         [userId, otp, expiresAt]
       );
       if (result.affectedRows === 0) return { success: false, message: 'OTP not saved.' };
+      console.log(result)
       return { success: true, insertId: result.insertId, userId, otp, expiresAt };
     } catch (error) {
       console.error('Error saving OTP:', error);
