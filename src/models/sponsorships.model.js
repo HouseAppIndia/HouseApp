@@ -1,4 +1,5 @@
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 
 const Sponsorships = {
   // CREATE
@@ -32,7 +33,7 @@ const Sponsorships = {
 
   } catch (error) {
     console.error('Error in Sponsorships.create:', error);
-    return { error: error.message };
+     throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 },
 
@@ -44,7 +45,7 @@ const Sponsorships = {
       return { data: rows };
     } catch (error) {
       console.error('Error in Sponsorships.findAll:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -56,7 +57,7 @@ const Sponsorships = {
       return { data: rows[0] || null };
     } catch (error) {
       console.error('Error in Sponsorships.findByPk:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -72,7 +73,7 @@ const Sponsorships = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in Sponsorships.update:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -84,7 +85,7 @@ const Sponsorships = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in Sponsorships.destroy:', error);
-      return { error: error.message };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 };

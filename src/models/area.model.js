@@ -1,5 +1,6 @@
 // models/areas.model.js
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 
 const Areas = {
   // CREATE
@@ -46,7 +47,7 @@ const Areas = {
       return { data: rows[0] || null };
     } catch (error) {
       console.error('Error in Areas.findByPk:', error);
-      return { error: error.message };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -63,7 +64,7 @@ const Areas = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in Areas.update:', error);
-      return { error: error.message };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -75,7 +76,7 @@ const Areas = {
       return { data: rows };
     } catch (error) {
       console.error('Error in Areas.getAreaId:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -87,7 +88,7 @@ const Areas = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in Areas.destroy:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 };

@@ -3,6 +3,7 @@ const catchAsync = require('../utils/catchAsync');
 const cityService = require('../services/cities.services');
 const areaService = require('../services/area.services');
 const localityService = require('../services/localities.services');
+const ApiError = require('../utils/ApiError');
 
 /* ----------------------------- City Controllers ----------------------------- */
 
@@ -11,7 +12,16 @@ const localityService = require('../services/localities.services');
  */
 const fetchAllCities = catchAsync(async (req, res) => {
     const data = await cityService.getAllCities();
-    res.status(httpStatus.OK).send(data);
+    const formattedData = data.data.map(city => ({
+    ...city,
+    country: "India",
+    is_active:  true,
+  }));
+    res.status(200).json({
+      success:true,
+      message: "Cities retrieved successfully",
+      formattedData
+    })
 });
 
 /**
@@ -27,25 +37,53 @@ const fetchCityById = catchAsync(async (req, res) => {
  * Add a new city
  */
 const createCity = catchAsync(async (req, res) => {
-      const cityData = {
+  const { name } = req.body;
+  const image = req.file?.filename;
+
+  // ❌ Validate required fields
+  if (!name || !image) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Name and image are required to create a city.');
+  }
+
+  // ✅ Construct full city data with image path
+  const cityData = {
     ...req.body,
-    image: `/logo/${req.file?.filename|| null} ` // Safely add image filename if uploaded
+    image: `/logo/${image}`
   };
-    const data = await cityService.createCity(cityData);
-    res.status(httpStatus.CREATED).send({ message: 'City created successfully', city: data });
+
+  // ✅ Save to DB
+  const data = await cityService.createCity(cityData);
+
+  // ✅ Send formatted success response using cityData
+  res.status(httpStatus.CREATED).json({
+    success: true,
+    message: 'City created successfully',
+    data: cityData
+  });
 });
 
 /**
  * Update city by ID
  */
 const updateCity = catchAsync(async (req, res) => {
-    const { id } = req.params;
-      const cityData = {
+  const { id } = req.params;
+  const { name } = req.body;
+  const image = req.file?.filename;
+  // ✅ Build update payload
+  const cityData = {
     ...req.body,
-    image: `/logo/${req.file?.filename|| null} ` // Safely add image filename if uploaded
+    image: `/logo/${image}`
   };
-    const data = await cityService.updateCityById(id, cityData);
-    res.status(httpStatus.OK).send({ message: 'City updated successfully', city: data });
+
+  // ✅ Call service to update
+  await cityService.updateCityById(id, cityData);
+
+  // ✅ Response
+  res.status(200).json({
+    success: true,
+    message: 'City updated successfully',
+    data: cityData
+  });
 });
 
 /**
@@ -63,10 +101,18 @@ const deleteCity = catchAsync(async (req, res) => {
  * Fetch all areas optionally filtered by cityId
  */
 const fetchAllAreas = catchAsync(async (req, res) => {
-    console.log(req.query)
     const cityId = req.query.cityId;
+    if (!cityId) throw new ApiError(httpStatus.BAD_REQUEST, "City ID is required to fetch areas","City ID is required");
     const data = await areaService.getAllAreas(cityId);
-    res.status(httpStatus.OK).send(data);
+      const formattedData = data?.data.map(city => ({
+    ...city,
+    is_active:  true,
+  }));
+    res.status(200).json({
+        success: true,
+        message: "Areas retrieved successfully",
+        formattedData
+    })
 });
 
 /**
@@ -81,19 +127,51 @@ const fetchAreaById = catchAsync(async (req, res) => {
 /**
  * Add a new area
  */
+
+
 const createArea = catchAsync(async (req, res) => {
-    const data = await areaService.createArea(req.body);
-    res.status(httpStatus.CREATED).send({ message: 'Area created successfully', area: data });
+  const { name, city_id } = req.body;
+
+  // ❌ Validate required fields
+  if (!name || !city_id) {
+    throw new ApiError(400, 'Name and city ID are required to create an area.',"reqired");
+  }
+
+  // ✅ Create area
+  const data = await areaService.createArea(req.body);
+
+  // ✅ Respond with formatted output
+  res.status(httpStatus.CREATED).json({
+    success: true,
+    message: 'Area created successfully',
+    data: req.body
+  });
 });
 
 /**
  * Update area by ID
  */
+
 const updateArea = catchAsync(async (req, res) => {
-    const { id } = req.params;
-    const data = await areaService.updateAreaById(id, req.body);
-    res.status(httpStatus.OK).send({ message: 'Area updated successfully', area: data });
+  const { id } = req.params;
+  const { name, city_id } = req.body;
+
+  // ❌ Validate required fields
+  if (!name || !city_id) {
+    throw new ApiError(400, 'Name and city ID are required to update an area.',"required");
+  }
+
+  // ✅ Update area
+  await areaService.updateAreaById(id, req.body);
+
+  // ✅ Respond with updated data (req.body)
+  res.status(httpStatus.OK).json({
+    success: true,
+    message: 'Area updated successfully',
+    data: req.body
+  });
 });
+
 
 /**
  * Delete area by ID
@@ -111,13 +189,20 @@ const deleteArea = catchAsync(async (req, res) => {
  */
 const fetchAllLocalities = catchAsync(async (req, res) => {
     const { cityId, areaId } = req.query;
+     if (!cityId && !areaId) { throw new ApiError(httpStatus.BAD_REQUEST, "Either cityId or areaId is required","required");}
     let filter = {};
     if (cityId) filter.city_id = cityId;
     if (areaId) filter.area_id = areaId;
-    console.log(filter,"filter")
-
     const data = await localityService.getAllLocalities(filter);
-    res.status(httpStatus.OK).send(data);
+    const formattedData = data.data.map(city => ({
+    ...city,
+    is_active:  true,
+  }));
+    res.status(200).json({
+    success: true,
+    message: "Localities retrieved successfully",
+    formattedData,
+  });
 });
 
 /**
@@ -229,13 +314,11 @@ const updateLocalityLimit = catchAsync(async (req, res) => {
 
 const searchLocalitiesByPrefix =catchAsync(async(req,res)=>{
     const { name } = req.query;
-
   if (!name) {
-    return res.status(400).json({ message: 'Query parameter "name" is required.' });
+    throw new ApiError(400,'Query parameter "name" is required.',"name is required.'")
   }
-
   const results = await localityService.fetchFilteredLocalities(name);
-  res.status(200).json({ success: true, data: results });
+  res.status(200).json({ success: true,message:"Localtities retrieved successfully", data: results });
 })
 
 

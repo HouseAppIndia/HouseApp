@@ -12,7 +12,7 @@ const morgan = require('./config/morgan');
 const { jwtStrategy } = require('./config/passport');
 const { authLimiter } = require('./middlewares/rateLimiter');
 const routes = require('./routes/v1');
-const { errorConverter, errorHandler } = require('./middlewares/error');
+const  errorHandler  = require('./middlewares/error');
 const ApiError = require('./utils/ApiError');
 const path = require('path');
 require('./middlewares/passport')
@@ -70,7 +70,7 @@ app.use((req, res, next) => {
 });
 
 // convert error to ApiError, if needed
-app.use(errorConverter);
+
 
 // handle error
 app.use(errorHandler);

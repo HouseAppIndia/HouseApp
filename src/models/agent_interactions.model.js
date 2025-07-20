@@ -1,4 +1,5 @@
 const pool = require('../config/db.config');
+const ApiError = require('../utils/ApiError');
 
 const AgentInteraction = {
     async create(user_id, data) {
@@ -26,7 +27,7 @@ const AgentInteraction = {
                 message: 'Success',
             };
         } catch (error) {
-            throw new Error(error.message || 'Error recording interaction');
+             throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
         }
     },
 }

@@ -1,6 +1,7 @@
 const pool = require('../config/db.config');
 const bcrypt = require('bcryptjs');
 const moment = require('moment');
+const ApiError =require('../utils/ApiError')
 
 
 
@@ -126,7 +127,7 @@ const User = {
         status: userData.status ?? true,
       };
     } catch (err) {
-      throw new Error(err.message || 'Error creating employee');
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -141,7 +142,7 @@ const User = {
       console.log(rows[0])
       return rows[0];
     } catch (error) {
-      throw new Error('Error retrieving employee by email');
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -152,7 +153,7 @@ const User = {
       console.log(await bcrypt.compare(password, hashedPassword))
       return await bcrypt.compare(password, hashedPassword);
     } catch (error) {
-      throw new Error('Error comparing passwords');
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -190,7 +191,7 @@ const User = {
       };
     } catch (error) {
       console.error("❌ Error in getAll:", error.message);
-      throw new Error('Error retrieving employee list');
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -203,7 +204,7 @@ const User = {
       );
       return rows[0];
     } catch (error) {
-      throw new Error('Error retrieving employee details');
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -267,7 +268,7 @@ const User = {
 
       return { message: 'Employee updated successfully' };
     } catch (error) {
-      throw new Error(error.message || 'Error updating employee');
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -285,7 +286,7 @@ const User = {
 
       return { message: 'Employee deleted successfully' };
     } catch (error) {
-      throw new Error(error.message || 'Error deleting employee');
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
   async verifyLocation({ source, value }) {
@@ -349,10 +350,7 @@ const User = {
       }
     } catch (error) {
       console.error(`❌ Error verifying location for source ${source}:`, error);
-      return {
-        success: false,
-        message: 'Internal server error.',
-      };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -414,10 +412,7 @@ let deleteQuery;
       }
     } catch (error) {
       console.error(`❌ Error verifying location for source ${source}:`, error);
-      return {
-        success: false,
-        message: 'Internal server error.',
-      };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -431,7 +426,7 @@ let deleteQuery;
       }
       return rows[0];
     } catch (error) {
-      throw new Error('Error retrieving employee profile');
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 

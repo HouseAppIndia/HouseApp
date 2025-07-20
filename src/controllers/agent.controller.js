@@ -2,9 +2,10 @@ const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const { authService, agentService, tokenService, agentWorkingLocationService, emailService } = require('../services');
 const { image } = require('../config/cloudinary');
+const ApiError = require('../utils/ApiError');
 
 const register = catchAsync(async (req, res) => {
-  let {phone } = req.body;
+  let { phone } = req.body;
   console.log('Body:', req.body);
   if (!phone) {
     return res.status(400).json({ message: 'Phone number is required.' });
@@ -30,7 +31,7 @@ const register = catchAsync(async (req, res) => {
 
   // Prepare payload
   const userData = {
-    phone:req.body.phone
+    phone: req.body.phone
   };
 
   // Call service to create agent
@@ -47,31 +48,64 @@ const register = catchAsync(async (req, res) => {
 
 const handleOtpVerification = catchAsync(async (req, res) => {
   let { phone, otp } = req.body;
+
+  phone = phone?.trim();
+  if (!phone) {
+    throw new ApiError(400, "Phone number is required", "INVALID_PHONE");
+  }
+
   if (!phone.startsWith('+91')) {
     if (!/^\d{10}$/.test(phone)) {
-      return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+      throw new ApiError(400, "Invalid phone number", "INVALID_PHONE");
     }
     phone = `+91${phone}`;
   }
+
+  // ✅ Validate OTP
+  if (!otp) {
+    throw new ApiError(400, "OTP is required", "OTP_REQUIRED");
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw new ApiError(400, "OTP must be numeric (6 digits)", "INVALID_OTP");
+  }
+
   const data = await agentService.verifyOtp(phone, otp)
-   // Check for success flag in returned data
+  // Check for success flag in returned data
   if (data.success === false) {
-    return res.status(400).json({ message: data.message }); // OTP failed
+    throw new ApiError(400, "OTP_VERIFICATION_FAILED", "OTP_VERIFICATION_FAILED") // OTP failed // OTP failed
   }
   const tokens = await tokenService.generateAuthTokens(data.user);
-  res.status(200).json({ message: data.message, agentId: data.user.id, role: data.user.role, tokens });
+  res.status(200).json({
+    success: true,
+    message: "Login successfully",
+    data: data?.user,
+    tokens: tokens.refresh.token,
+    expires_in: tokens?.refresh?.expires
+  });
 })
 
 const regenerateOtp = catchAsync(async (req, res) => {
-  let { phone } = req.body;
+  let phone = req.body.phone.trim();
+  if (!phone) {
+    throw new ApiError(400, "Phone number is required", "INVALID_PHONE");
+  }
   if (!phone.startsWith('+91')) {
     if (!/^\d{10}$/.test(phone)) {
-      return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+      throw new ApiError(400, "Invalid phone number", "INVALID_PHONE");
     }
     phone = `+91${phone}`;
   }
   const data = await agentService.handleResendOtp(phone)
-  res.status(200).json(data);
+  res.status(200).json({
+    success: true,
+    message: "A new OTP has been sent to your registered phone number.",
+    data: {
+      otp_sent: true,
+      phone: phone.replace('+91', ''),
+      expires_in: 300 // or return from service
+    }
+  });
 })
 
 
@@ -90,16 +124,32 @@ const verifyAndDeleteAccount = catchAsync(async (req, res) => {
 })
 
 const login = catchAsync(async (req, res) => {
-  let { phone } = req.body;
-  phone = phone.trim();
+  let phone = req.body.phone?.trim();
+
+  if (!phone) {
+    throw new ApiError(400, "Phone number is required", "INVALID_PHONE");
+  }
+
   if (!phone.startsWith('+91')) {
     if (!/^\d{10}$/.test(phone)) {
-      return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+      throw new ApiError(400, "Phone number must be exactly 10 digits", "INVALID_PHONE");
     }
     phone = `+91${phone}`;
   }
+
   const user = await agentService.loginUserWithEmailAndPassword(phone);
-  res.send({ user: user });
+
+  const OTP_EXPIRY_TIME = 300; // seconds
+  res.status(200).json({
+    success: true,
+    message: "OTP sent successfully",
+    data: {
+      otp_sent: true,
+      phone: phone.replace("+91", ""),
+      expires_in: OTP_EXPIRY_TIME,
+    }
+  });
+
 });
 
 const UpdateProfile = async (req, res) => {
@@ -116,10 +166,7 @@ const UpdateProfile = async (req, res) => {
     }
 
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'At least one image file is required',
-      });
+      throw new ApiError(400,"At least one image file is required","At least one image file is required'")
     }
 
     // Store all image paths
@@ -129,15 +176,17 @@ const UpdateProfile = async (req, res) => {
     updateData.images = imagePaths
     console.log(imagePaths) // or imagePaths.join(',') if you're storing as CSV
     console.log(updateData)
-      
+
     // Now call the update service with all form data + images
     const success = await agentService.updateProfile(agentId, updateData);
 
-    if (success) {
-      return res.status(200).json({ message: 'Profile updated successfully' });
-    } else {
-      return res.status(404).json({ message: 'Agent not found or no changes made' });
-    }
+     res.status(200).json({
+       success:true,
+       message:"Agent profile updated successfully",
+       data:req.body,
+       profile_image:imagePaths
+
+     })
   } catch (error) {
     console.error('Error updating agent profile:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -147,37 +196,28 @@ const UpdateProfile = async (req, res) => {
 
 const AddWorkingLocation = catchAsync(async (req, res) => {
   const agentId = req.user.userId;
-  const { location } = req.body;
-
+  const { location } = req.body
   if (!Array.isArray(location) || location.length === 0) {
-    return res.status(400).json({ message: 'Locations must be a non-empty array.' });
+    throw new ApiError(400,"Locations must be a non-empty array","Locations must be a non-empty")
   }
-  console.log(agentId, location)
   const result = await agentWorkingLocationService.addLocations(agentId, location);
-
-  if (result) {
-    res.status(201).json({ message: 'Locations added successfully', locations: result });
-  } else {
-    res.status(500).json({ message: 'Failed to add locations' });
-  }
+   res.status(201).json({
+    success: true,
+    message: 'Working locations have been added successfully.',
+    locations: result
+  });
 });
 
-// const logout = catchAsync(async (req, res) => {
-//   const refreshToken = req.body.refreshToken || req.headers['x-refresh-token'];
-//   await authService.logout(refreshToken);
-//   res.status(200).json({ message: 'Logged out f successfully' });
-// });
 
 
 
 const createOrUpdateAddress = catchAsync(async (req, res) => {
-  try {
-    const agentId = req.user.userId;
-    const result = await agentService.upsertOfficeAddress(agentId, req.body);
-    res.status(200).json(result);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+   const result = await agentService.upsertOfficeAddress(agentId, req.body);
+   res.status(200).json({
+    success:true,
+    message:"Office Address Update Sucessfuly",
+    result
+   })
 })
 
 

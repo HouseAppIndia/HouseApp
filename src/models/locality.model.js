@@ -1,5 +1,6 @@
 // models/localities.model.js
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 const localities = {
   // CREATE
   async create(data) {
@@ -13,7 +14,7 @@ const localities = {
       return { insertId: result.insertId };
     } catch (error) {
       console.error('Error in Localities.create:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -32,7 +33,7 @@ const localities = {
       return { data: rows };
     } catch (error) {
       console.error('Error in Localities.findAll:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -52,7 +53,7 @@ const localities = {
       return { data: rows[0] || null };
     } catch (error) {
       console.error('Error in Localities.findByPk:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -71,7 +72,7 @@ const localities = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in Localities.update:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -83,7 +84,7 @@ const localities = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in Localities.destroy:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -120,7 +121,7 @@ const localities = {
     return { data: [] };
   } catch (error) {
     console.error('Error in Localities.findlocalities:', error);
-    return { error: error.message };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 
   },
@@ -158,12 +159,10 @@ async searchLocalitiesByName(searchTerm) {
     return rows;
   } catch (err) {
     console.error('Error in searchLocalitiesByName:', err.message);
-    return [];
+     throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 },
-async findLocalitiesByCityOrArea(){
 
-}
 
 };
 

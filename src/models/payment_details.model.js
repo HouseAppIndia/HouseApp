@@ -1,33 +1,78 @@
-// models/payment_details.model.js
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 
 const PaymentDetails = {
   // CREATE
-  async create(data) {
-    try {
-      const query = `
+
+  // CREATE OR UPDATE
+  async createOrUpdateByBankAccountNumber(data) {
+  try {
+    console.log()
+    const checkQuery = 'SELECT id FROM payment_details WHERE bank_account_number = ?';
+    const [existing] = await pool.execute(checkQuery, [data.bank_account_number]);
+
+    if (existing.length > 0) {
+      // 🔁 UPDATE
+      const id = existing[0].id;
+      const fields = [];
+      const values = [];
+
+      if (data.qr_code_url !== undefined) {
+        fields.push('qr_code_url = ?');
+        values.push(data.qr_code_url);
+      }
+
+      if (data.ifsc_code !== undefined) {
+        fields.push('ifsc_code = ?');
+        values.push(data.ifsc_code);
+      }
+
+      if (data.bank_name !== undefined) {
+        fields.push('bank_name = ?');
+        values.push(data.bank_name);
+      }
+
+      if (data.account_holder_name !== undefined) {
+        fields.push('account_holder_name = ?');
+        values.push(data.account_holder_name);
+      }
+
+      // No need to update bank_account_number itself since it’s used for lookup
+
+      if (fields.length === 0) {
+        return { message: 'No fields to update' };
+      }
+
+      const updateQuery = `UPDATE payment_details SET ${fields.join(', ')} WHERE id = ?`;
+      values.push(id);
+
+      const [result] = await pool.execute(updateQuery, values);
+      return { action: 'updated', affectedRows: result.affectedRows,data };
+    } else {
+      // ➕ INSERT
+      const insertQuery = `
         INSERT INTO payment_details (
-          employee_id, qr_code, qr_code_url,
-          bank_account_number, ifsc_code,
-          bank_name, account_holder_name
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          bank_account_number, qr_code_url,
+          ifsc_code, bank_name, account_holder_name
+        ) VALUES (?, ?, ?, ?, ?)
       `;
       const values = [
-        data.employee_id || null,
-        data.qr_code || null,
-        data.qr_code_url || null,
         data.bank_account_number || null,
+        data.qr_code_url || null,
         data.ifsc_code || null,
         data.bank_name || null,
         data.account_holder_name || null
       ];
-      const [result] = await pool.execute(query, values);
-      return { insertId: result.insertId };
-    } catch (error) {
-      console.error('Error in PaymentDetails.create:', error);
-      return { error: error.message };
+
+      const [result] = await pool.execute(insertQuery, data);
+      return { action: 'inserted', insertId: result.insertId };
     }
-  },
+  } catch (error) {
+    console.error('Error in createOrUpdateByBankAccountNumber:', error);
+     throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
+  }
+},
+
 
   // READ ALL
   async findAll() {
@@ -37,7 +82,7 @@ const PaymentDetails = {
       return { data: rows };
     } catch (error) {
       console.error('Error in PaymentDetails.findAll:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -49,65 +94,11 @@ const PaymentDetails = {
       return { data: rows[0] || null };
     } catch (error) {
       console.error('Error in PaymentDetails.findByPk:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
-  // UPDATE
-  async update(id, updateData) {
-    try {
-      const fields = [];
-      const values = [];
 
-      if (updateData.employee_id !== undefined) {
-        fields.push('employee_id = ?');
-        values.push(updateData.employee_id);
-      }
-
-      if (updateData.qr_code !== undefined) {
-        fields.push('qr_code = ?');
-        values.push(updateData.qr_code);
-      }
-
-      if (updateData.qr_code_url !== undefined) {
-        fields.push('qr_code_url = ?');
-        values.push(updateData.qr_code_url);
-      }
-
-      if (updateData.bank_account_number !== undefined) {
-        fields.push('bank_account_number = ?');
-        values.push(updateData.bank_account_number);
-      }
-
-      if (updateData.ifsc_code !== undefined) {
-        fields.push('ifsc_code = ?');
-        values.push(updateData.ifsc_code);
-      }
-
-      if (updateData.bank_name !== undefined) {
-        fields.push('bank_name = ?');
-        values.push(updateData.bank_name);
-      }
-
-      if (updateData.account_holder_name !== undefined) {
-        fields.push('account_holder_name = ?');
-        values.push(updateData.account_holder_name);
-      }
-
-      if (fields.length === 0) {
-        return { message: 'No fields to update' };
-      }
-
-      const query = `UPDATE payment_details SET ${fields.join(', ')} WHERE id = ?`;
-      values.push(id); // add id at the end
-
-      const [result] = await pool.execute(query, values);
-      return { affectedRows: result.affectedRows };
-    } catch (error) {
-      console.error('Error in PaymentDetails.update:', error);
-      return { error: error.message };
-    }
-  },
 
   // DELETE
   async destroy(id) {
@@ -117,7 +108,7 @@ const PaymentDetails = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in PaymentDetails.destroy:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   }
 };

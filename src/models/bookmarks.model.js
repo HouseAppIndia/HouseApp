@@ -1,4 +1,5 @@
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 
 const Bookmarks = {
   // CREATE a bookmark
@@ -23,7 +24,7 @@ const Bookmarks = {
     }
   } catch (error) {
     console.error('Error in createOrToggleBookmark:', error);
-    return { error: error.message };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
   },
 
@@ -56,7 +57,7 @@ const Bookmarks = {
       return { data: rows };
     } catch (error) {
       console.error('Error in Bookmarks.findAllByUser:', error);
-      return { error: error.message };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -68,7 +69,7 @@ const Bookmarks = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in Bookmarks.destroy:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 };

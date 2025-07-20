@@ -2,6 +2,7 @@
     const bcrypt = require('bcryptjs');
     const { json } = require('express');
     const moment = require('moment');
+    const ApiError = require('../utils/ApiError');
 
     const Agent = {
         async isMobilePhone(phone, excludeId = null) {
@@ -18,7 +19,7 @@
                 return rows.length > 0;
             } catch (error) {
                 console.error("Error checking phone:", error);
-                throw new Error("Error checking phone number");
+                 throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         },
 
@@ -43,7 +44,7 @@
                 };
             } catch (error) {
                 console.error("Create agent error:", error);
-                return { success: false, message: error.message || 'Failed to create agent' };
+                throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         },
 
@@ -53,7 +54,7 @@
                 return rows[0] || null;
             } catch (error) {
                 console.error("Error fetching user by phone:", error);
-                return null;
+                  throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         },
 
@@ -63,7 +64,7 @@
                 return rows[0] || null;
             } catch (error) {
                 console.error("Error fetching user by ID:", error);
-                return null;
+                  throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         },
 
@@ -137,7 +138,7 @@
                 };
             } catch (error) {
                 console.error("Error updating profile:", error);
-                return { success: false, message: 'Error updating profile' };
+                  throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         },
 
@@ -156,7 +157,7 @@
                 return { success: true, message: 'Locations added successfully', agentId };
             } catch (error) {
                 console.error('Error inserting working locations:', error);
-                return { success: false, message: 'Failed to add working locations' };
+                  throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         },
 
@@ -169,7 +170,7 @@
                 return { success: true, data: rows };
             } catch (error) {
                 console.error("Error fetching working locations:", error);
-                return { success: false, message: 'Failed to fetch working locations' };
+                 throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         },
 
@@ -187,7 +188,7 @@
                 return { success: true, message: "User status updated to false" };
             } catch (error) {
                 console.error("Error updating status:", error);
-                return { success: false, message: "An error occurred while updating status" };
+                  throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         },
 
@@ -209,7 +210,7 @@
                 };
             } catch (error) {
                 console.error("Error saving OTP:", error);
-                return { success: false, message: "Failed to save OTP" };
+                  throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         },
 
@@ -240,7 +241,7 @@
                 return { success: true, message: "OTP verified successfully" };
             } catch (error) {
                 console.error("Error verifying OTP:", error);
-                return { success: false, message: "Server error while verifying OTP" };
+                  throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');;
             }
         },
 
@@ -270,7 +271,7 @@
                 }
             } catch (error) {
                 console.error("Error updating address:", error);
-                return { success: false, message: "Error updating address" };
+                  throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
             }
         }
     };

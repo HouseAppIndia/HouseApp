@@ -12,5 +12,6 @@ module.exports.localityService=require('./localities.services')
 module.exports.BookMarkService=require('./bookmark.service')
 module.exports.PropertyRequestService=require('./propertyRequest.service')
 module.exports.SponserShipService =require('./sponsorships.service')
+module.exports.AccountService=require('./account.services')
 
 

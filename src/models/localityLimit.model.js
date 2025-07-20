@@ -1,5 +1,6 @@
 // models/localityLimits.model.js
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 
 const LocalityLimits = {
   // CREATE
@@ -22,7 +23,7 @@ const LocalityLimits = {
     }
   } catch (error) {
     console.error('Error in createOrUpdateLocalityLimit:', error);
-    return { error: error.message };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }  
 },
 
@@ -39,7 +40,7 @@ const LocalityLimits = {
       return { data: rows };
     } catch (error) {
       console.error('Error in LocalityLimits.findAll:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -51,7 +52,7 @@ const LocalityLimits = {
       return { data: rows[0] || null };
     } catch (error) {
       console.error('Error in LocalityLimits.findByPk:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -63,7 +64,7 @@ const LocalityLimits = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in LocalityLimits.update:', error);
-      return { error: error.message };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -75,7 +76,7 @@ const LocalityLimits = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in LocalityLimits.destroy:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 };

@@ -1,5 +1,6 @@
 // models/cities.model.js
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 
 const Cities = {
   // CREATE
@@ -10,7 +11,7 @@ const Cities = {
       return { insertId: result.insertId };
     } catch (error) {
       console.error('Error in Cities.create:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -22,7 +23,7 @@ const Cities = {
       return { data: rows };
     } catch (error) {
       console.error('Error in Cities.findAll:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -35,7 +36,7 @@ const Cities = {
       return { data: rows[0] || null };
     } catch (error) {
       console.error('Error in Cities.findByPk:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -68,7 +69,7 @@ const Cities = {
     return { affectedRows: result.affectedRows };
   } catch (error) {
     console.error('Error updating city:', error);
-    return { error: error.message };
+     throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 },
 
@@ -80,7 +81,7 @@ const Cities = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in Cities.destroy:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 };

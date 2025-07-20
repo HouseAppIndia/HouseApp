@@ -1,4 +1,5 @@
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 
 function createStaticModel(tableName) {
   return {
@@ -24,7 +25,7 @@ function createStaticModel(tableName) {
     return { success: true };
   } catch (error) {
     console.error('Error in terms_and_conditions.createOrUpdate:', error);
-    return { error: error.message };
+     throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 },
 
@@ -36,7 +37,7 @@ function createStaticModel(tableName) {
         return { data: rows };
       } catch (error) {
         console.error(`Error in ${tableName}.findAll:`, error);
-        return { error: error.message };
+        throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
       }
     },
 
@@ -48,7 +49,7 @@ function createStaticModel(tableName) {
         return { data: rows[0] || null };
       } catch (error) {
         console.error(`Error in ${tableName}.findByPk:`, error);
-        return { error: error.message };
+         throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
       }
     },
 
@@ -61,7 +62,7 @@ function createStaticModel(tableName) {
         return { affectedRows: result.affectedRows };
       } catch (error) {
         console.error(`Error in ${tableName}.update:`, error);
-        return { error: error.message };
+         throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
       }
     },
 
@@ -73,7 +74,7 @@ function createStaticModel(tableName) {
         return { affectedRows: result.affectedRows };
       } catch (error) {
         console.error(`Error in ${tableName}.destroy:`, error);
-        return { error: error.message };
+         throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
       }
     },
   };

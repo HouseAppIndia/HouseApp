@@ -1,6 +1,7 @@
 const pool = require('../config/db.config');
 const bcrypt = require('bcryptjs');
 const moment = require('moment');
+const ApiError =require('../utils/ApiError')
 
 const Client = {
   // Check if phone already exists
@@ -16,7 +17,7 @@ const Client = {
       return rows.length > 0;
     } catch (error) {
       console.error('Error checking phone existence:', error);
-      return { success: false, message: 'Failed to check phone number.' };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -45,7 +46,7 @@ const Client = {
       };
     } catch (error) {
       console.error('Error creating user:', error);
-      return { success: false, message: 'Failed to create user.' };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -57,7 +58,7 @@ const Client = {
       return { success: true, data: rows[0] };
     } catch (error) {
       console.error('Error fetching user by ID:', error);
-      return { success: false, message: 'Failed to fetch user.' };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -78,7 +79,7 @@ const Client = {
       };
     } catch (error) {
       console.error('Error fetching working locations:', error);
-      return { success: false, message: 'Failed to fetch locations.', data: [] };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -132,11 +133,11 @@ async getAgentsByLocationwitoutlogin(locationId, limit, offset = 0) {
         : row.image_urls
     }));
 
-    return { success: true, data: formatted };
+    return {data: formatted };
 
   } catch (error) {
     console.error('Error fetching agents:', error);
-    return { success: false, message: 'Failed to fetch agents.', data: [] };
+     throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 }
 
@@ -144,8 +145,8 @@ async getAgentsByLocationwitoutlogin(locationId, limit, offset = 0) {
 
 
   async updateAgentAverageRating(agent_id) {
-    console.log(agent_id, "agent_idagent_id")
-    const [[{ avgRating }]] = await pool.execute(
+    try {
+      const [[{ avgRating }]] = await pool.execute(
       `SELECT ROUND(AVG(rating), 2) as avgRating FROM user_review WHERE agent_id = ?`,
       [agent_id]
     );
@@ -154,6 +155,10 @@ async getAgentsByLocationwitoutlogin(locationId, limit, offset = 0) {
       `UPDATE agents SET rating = ? WHERE id = ?`,
       [avgRating || 0, agent_id] // fallback to 0 if no reviews
     );
+    } catch (error) {
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
+    }
+    
   },
 
 
@@ -185,7 +190,7 @@ async getAgentsByLocationwitoutlogin(locationId, limit, offset = 0) {
       return { success: true, id: reviewId, message: 'Review added successfully.' };
     } catch (error) {
       console.error('Error creating review:', error);
-      return { success: false, message: 'Failed to add review.' };
+     throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -221,7 +226,7 @@ async getAgentsByLocationwitoutlogin(locationId, limit, offset = 0) {
     return { success: true, message: 'Review updated successfully.' };
   } catch (error) {
     console.error('Error updating review:', error);
-    return { success: false, message: 'Failed to update review.' };
+   throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
   },
 
@@ -256,7 +261,7 @@ async getAgentsByLocationwitoutlogin(locationId, limit, offset = 0) {
     return { success: true, message: 'Review deleted successfully.' };
   } catch (error) {
     console.error('Error deleting review:', error);
-    return { success: false, message: 'Failed to delete review.' };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
   },
 
@@ -296,11 +301,7 @@ async getAllReviews({ agent_id } = {}) {
     };
   } catch (error) {
     console.error('Error fetching reviews:', error);
-    return {
-      success: false,
-      data: [],
-      message: 'Failed to fetch reviews.',
-    };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');;
   }
 },
 
@@ -312,7 +313,7 @@ async getAllReviews({ agent_id } = {}) {
       return { success: true, data: rows[0] };
     } catch (error) {
       console.error('Error fetching review:', error);
-      return { success: false, message: 'Failed to fetch review.' };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -329,7 +330,7 @@ async getAllReviews({ agent_id } = {}) {
       return { success: true, insertId: result.insertId, userId, otp, expiresAt };
     } catch (error) {
       console.error('Error saving OTP:', error);
-      return { success: false, message: 'Failed to save OTP.' };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -353,7 +354,7 @@ async getAllReviews({ agent_id } = {}) {
       return { success: true, message: 'OTP verified successfully.' };
     } catch (error) {
       console.error('Error verifying OTP:', error);
-      return { success: false, message: 'Server error while verifying OTP.' };
+     throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');;
     }
   },
 
@@ -365,16 +366,12 @@ async getAllReviews({ agent_id } = {}) {
       return { success: true, data: user };
     } catch (error) {
       console.error('Error fetching user by phone:', error);
-      return { success: false, message: 'Failed to fetch user.' };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
   // Update user details
   async updateUserById(userId, updates,imagePaths) {
-    console.log(userId,"userId")
-    console.log(updates,"updates")
-    console.log(imagePaths,"imagePaths")
-
     try {
       const fields = [];
       const values = [];
@@ -408,16 +405,13 @@ async getAllReviews({ agent_id } = {}) {
       }
       if (!fields.length) return { success: false, message: 'No valid fields provided to update.' };
 
-      // fields.push('updatedAt = CURRENT_TIMESTAMP');
-      // values.push(userId);
-
       const [result] = await pool.execute(`UPDATE user SET ${fields.join(', ')} WHERE id = ${userId}`, values);
       if (!result.affectedRows) return { success: false, message: 'User not found or no changes made.' };
 
       return { success: true, message: 'User profile updated successfully.' };
     } catch (error) {
       console.error('Error updating user profile:', error);
-      return { success: false, message: 'Failed to update user profile.' };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -429,13 +423,12 @@ async getAllReviews({ agent_id } = {}) {
       return { success: true, message: 'User status updated to inactive.' };
     } catch (error) {
       console.error('Error updating user status:', error);
-      return { success: false, message: 'Failed to update user status.' };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
   // Get user by ID
  async getAgentById(user_id,agent_id) {
-  console.log("hello",user_id,agent_id)
   try {
     const [rows] = await pool.execute(`
       SELECT 
@@ -460,10 +453,10 @@ async getAllReviews({ agent_id } = {}) {
     const agent = rows[0];
     agent.images = agent.images ? agent.images.split(',') : [];
 
-    return { success: true, data: agent };
+    return {data: agent };
   } catch (error) {
     console.error('Error fetching agent by ID:', error);
-    return { success: false, message: 'Failed to fetch agent.' };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 }
 ,
@@ -521,7 +514,7 @@ async  getUserById(userId) {
     return rows.length ? rows[0] : null;
   } catch (error) {
     console.error("Error in getUserById:", error);
-    throw error;
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 }
 

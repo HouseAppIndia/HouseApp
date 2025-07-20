@@ -2,8 +2,6 @@ const { City } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 const getAllCities = async () => {
-  console.log("jjjjjj");
-  
   return City.findAll();
 };
 

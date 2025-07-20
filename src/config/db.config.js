@@ -442,6 +442,18 @@ async function AddBankDetail(params) {
 
 
 
+async function AddphoneNumber(){
+  const query=`CREATE TABLE IF NOT EXISTS phones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT,
+    phone_type ENUM('primary', 'secondary'),
+    phone_number VARCHAR(15),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);`
+ await pool.execute(query)
+}
+
 // Dummy function if 'addEntityColumn' is referenced but not defined
 
 
@@ -474,6 +486,7 @@ async function initializeDatabase() {
     await createAgentViewsTable()
     await createLocalitiesViewsTable()
     await AddBankDetail()
+    await AddphoneNumber()
     console.log("✅ All tables created successfully!");
   } catch (err) {
     console.error("❌ Error initializing database:", err);

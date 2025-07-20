@@ -1,4 +1,5 @@
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 
 const Banner = {
   async createBaner({title, image_url, link_url, start_time, end_time, is_active = true,position,  priority = 1,city_id}) {  
@@ -16,11 +17,7 @@ const Banner = {
       };
     } catch (error) {
       console.error('Error in createBanner:', error);
-      return {
-        success: false,
-        message: 'Failed to create banner',
-        error: error.message,
-      };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -51,7 +48,7 @@ const Banner = {
     return { success: true, data: rows };
   } catch (error) {
     console.error('Error fetching banners with cities:', error);
-    return { success: false, message: 'Error fetching banners', error };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
   },
 
@@ -62,11 +59,7 @@ const Banner = {
       return { success: true, data: banners[0] };
     } catch (error) {
       console.error('Error in getBannerById:', error);
-      return {
-        success: false,
-        message: 'Failed to get banner',
-        error: error.message,
-      };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -77,11 +70,7 @@ const Banner = {
       return { success: true, message: 'Banner deleted successfully' };
     } catch (error) {
       console.error('Error in deleteBanner:', error);
-      return {
-        success: false,
-        message: 'Failed to delete banner',
-        error: error.message,
-      };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 

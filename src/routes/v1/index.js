@@ -8,6 +8,7 @@ const config = require('../../config/config');
 const CitiesRoute =require('./cities.route')
 const Static_Content =require('./staticContent.routes')
 const googleAuhtRoute =require('./goole.auth.route')
+const accountRoute =require('./account.routes')
 
 const router = express.Router();
 
@@ -15,6 +16,10 @@ const defaultRoutes = [
   {
     path: '/auth/admin',
     route: authRoute,
+  },
+  {
+    path: '/auth/admin',
+    route: accountRoute,
   },
   {
     path: '/auth/employee',

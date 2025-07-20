@@ -4,6 +4,8 @@ const ApiError = require('../utils/ApiError');
 const catchAsync = require('../utils/catchAsync');
 const { ClientService, authService, tokenService,PropertyRequestService } = require('../services');
 const pool = require('../config/db.config');
+const { token } = require('morgan');
+const { profile } = require('winston');
 
 const createUser = catchAsync(async (req, res) => {
   console.log(req.body)
@@ -16,52 +18,76 @@ const createUser = catchAsync(async (req, res) => {
 });
 
 const handleOtpVerification = catchAsync(async (req, res) => {
-  const { phone, otp } = req.body;
-  if (!/^\d{10}$/.test(phone)) {
-    return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+   let { phone, otp } = req.body;
+
+  phone = phone?.trim();
+  if (!phone) {
+    throw new ApiError(400, "Phone number is required", "INVALID_PHONE");
   }
-    // Check for success flag in returned data
-      const data = await ClientService.verifyUserOtp(phone, otp);
+
+  if (!phone.startsWith('+91')) {
+    if (!/^\d{10}$/.test(phone)) {
+      throw new ApiError(400, "Invalid phone number", "INVALID_PHONE");
+    }
+    phone = `+91${phone}`;
+  }
+
+  // ✅ Validate OTP
+  if (!otp) {
+    throw new ApiError(400, "OTP is required", "OTP_REQUIRED");
+  }
+
+  if (!/^\d{6}$/.test(otp)) {
+    throw new ApiError(400, "OTP must be numeric (6 digits)", "INVALID_OTP");
+  }
+  const data = await ClientService.verifyUserOtp(phone, otp);
   if (data.success === false) {
-    return res.status(400).json({ message: data.message }); // OTP failed
+    throw new ApiError(400,"OTP_VERIFICATION_FAILED","OTP_VERIFICATION_FAILED") // OTP failed
   }
     const tokens = await tokenService.generateAuthTokens(data.user);
-  return res.status(200).json({
-    message: data.message,
-    UserId: data.user.id,
-    role: data.user.role,
-    tokens,
+   res.status(200).json({
+    success: true,
+    message: "Login successfully",
+    data:data?.user,
+    tokens:tokens.refresh.token,
+    expires_in:tokens?.refresh?.expires
   });
 })
 
 const regenerateOtp = catchAsync(async (req, res) => {
-  const { phone } = req.body;
-  if (!/^\d{10}$/.test(phone)) {
-    return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+  let  phone  = req.body.phone.trim();
+    if (!phone) {
+    throw new ApiError(400, "Phone number is required", "INVALID_PHONE");
+  }
+  if (!phone.startsWith('+91')) {
+    if (!/^\d{10}$/.test(phone)) {
+      throw new ApiError(400, "Invalid phone number", "INVALID_PHONE");
+    }
+    phone = `+91${phone}`;
   }
   const data = await ClientService.handleResendOtp(phone)
-  res.status(200).json(data);
+     res.status(200).json({
+    success: true,
+    message: "A new OTP has been sent to your registered phone number.",
+    data: {
+      otp_sent: true,
+      phone: phone.replace('+91', ''),
+      expires_in: 300 // or return from service
+    }
+  });
 })
 
 const updateProfile = catchAsync(async (req, res) => {
-  console.log(req.user)
-  console.log(req.file)
   const user_id = req.user.userId;
   const userBody = req.body;
-  console.log(user_id)
-  console.log(req.body)
-  console.log(req.file)
-   const imagePaths = `/image/${req.file?.filename}`
-   console.log(imagePaths)
-
-
+  const imagePaths = `/image/${req.file?.filename}`
   const data = await ClientService.handleUpdateProfile(user_id, userBody,imagePaths);
-  console.log(data,"code")
 
   res.status(200).json({
     success: true,
-    message: data.message || "Profile updated successfully",
-    data: data.user || null
+    message: "Profile updated successfully",
+    data: userBody,
+    profile:imagePaths
   });
 });
 
@@ -82,89 +108,103 @@ const verifyAndDeleteAccount = catchAsync(async (req, res) => {
 
 
 const getAgentsByLocation = catchAsync(async (req, res) => {
-  console.log(req.query.locationId)
    const userId = req.user.userId;
-  if (!req?.query?.locationId) return res.status(httpStatus.BAD_REQUEST).json({ message: "Location is required" });
+   if (!req?.query?.locationId) throw new ApiError(httpStatus.BAD_REQUEST, "Location ID is required", "LOCATION_ID_REQUIRED");
   const user = await ClientService.getAgentsByLocation(req.query.locationId,userId);
-  res.status(httpStatus.CREATED).send(user);
+   res.status(200).json({
+    success:true,
+    message:"Agents retrieved successfully",
+    user
+   })
 });
 
 
 
 const login = catchAsync(async (req, res) => {
-  const { phone } = req.body;
-  if (!/^\d{10}$/.test(phone)) {
-    return res.status(400).json({ message: 'Phone number must be exactly 10 digits.' });
+  let phone = req.body.phone?.trim();
+  if (!phone) {
+    throw new ApiError(400, "Phone number is required", "INVALID_PHONE");
+  }
+  if (!phone.startsWith('+91')) {
+    if (!/^\d{10}$/.test(phone)) {
+     throw new ApiError(400, "Invalid phone number", "INVALID_PHONE")
+    }
+    phone = `+91${phone}`;
   }
   const user = await ClientService.loginUserWithPhone(phone);
-  res.send({ user: user });
+  const OTP_EXPIRY_TIME = 300; // seconds
+   res.status(200).json({
+    success: true,
+    message: "OTP sent successfully",
+    data: {
+      otp_sent: true,
+      phone: phone.replace("+91", ""), // send plain 10-digit number
+      expires_in: OTP_EXPIRY_TIME
+    }
+  });
 });
 
 const recordUserClick = catchAsync(async (req, res) => {
   const { agentId, click_type, clicked_from } = req.body;
-  const userId = req.user?.userId;
-  // Basic validation
-  console.log(req.body)
+  const userId =req.user.userId
   if (!agentId || !click_type) {
-    return res.status(400).json({ message: 'agentId and click_type are required.' });
+    throw new ApiError(httpStatus.BAD_REQUEST, "agentId and click_type are required.", "MISSING_CLICK_DATA");
   }
-
   if (!['browser', 'mobile'].includes(clicked_from)) {
-    return res.status(400).json({ message: 'clicked_from must be "browser" or "mobile".' });
+    throw new ApiError(httpStatus.BAD_REQUEST, 'clicked_from must be "browser" or "mobile".', "INVALID_CLICKED_FROM");
   }
   const data = await ClientService.recordUserClick(userId, req.body)
-  res.status(httpStatus.CREATED).send(data);
+  // res.status(httpStatus.CREATED).send(data);
+  res.status(201).json({
+    success:true,
+    message:`Interaction recorded by ${click_type} successfully`
+  })
 })
 
 const createReview = catchAsync(async (req, res) => {
-  console.log(req.user)
   const { agent_id, comment, rating } = req.body;
   const user_id = req.user.userId;
+
   // Validate input
   if (!agent_id || !rating) {
-    return res.status(400).json({
-      success: false,
-      message: 'agent_id and rating are required',
-    });
+    throw new ApiError(httpStatus.BAD_REQUEST, "agent_id and rating are required");
   }
 
- // Store all image paths
-    const imagePaths = req.files.map(file => `image/${file.filename}`);
-
-    // Save as array or comma-separated string, depending on your DB design
+  // Get all uploaded image paths
+  const imagePaths = req.files?.map((file) => `image/${file.filename}`) || [];
 
   const review = await ClientService.createReview({
     user_id,
     agent_id,
     comment,
     rating,
-    imagePaths
+    imagePaths,
   });
 
-  res.status(201).json({
+  res.status(httpStatus.CREATED).json({
     success: true,
-    message: review.message,
+    message: "Review added successfully",
     data: {
       id: review.id,
       user_id,
       agent_id,
-      comment,
       rating,
+      comment,
+      created_at: review.created_at,
     },
   });
-
 });
 
+
 const updateReview = catchAsync(async (req, res) => {
-  const id = req.params.id;  // Get the review ID from the URL parameters
-  const { user_id, agent_id, comment, rating } = req.body;  // Get the review data from the request body
-  console.log(id, "review_id, comment, rating",comment,rating)
+  const id = req.params.id;
+  const { comment, rating } = req.body;
+
+  console.log(id, "review_id, comment, rating", comment, rating);
+
   // Validate input
   if (!comment && !rating) {
-    return res.status(400).json({
-      success: false,
-      message: 'At least one of comment or rating must be provided.',
-    });
+    throw new ApiError(httpStatus.BAD_REQUEST, 'At least one of comment or rating must be provided.');
   }
 
   // Call the service to update the review
@@ -175,54 +215,80 @@ const updateReview = catchAsync(async (req, res) => {
   });
 
   if (!review) {
-    return res.status(404).json({
-      success: false,
-      message: 'Review not found.',
-    });
+    throw new ApiError(httpStatus.NOT_FOUND, 'Review not found.');
   }
 
   // Send the response
-  res.status(200).json({
+  res.status(httpStatus.OK).json({
     success: true,
-    message: review.message,
+    message: 'Review updated successfully',
     data: {
       id: review.id,
       user_id: review.user_id,
       agent_id: review.agent_id,
-      comment: review.comment,
       rating: review.rating,
+      comment: review.comment,
+      updated_at: review.updated_at,
     },
   });
 });
 
 
+
 const getAllReviews = catchAsync(async (req, res) => {
-  console.log(req.query,"chh")
   const { agent_id } = req.query;
-  console.log(agent_id)
-
   if (!agent_id) {
-    return res.status(400).json({
-      success: false,
-      message: 'Agent ID is required',
-    });
+    throw new ApiError(httpStatus.BAD_REQUEST, "Agent ID is required");
   }
+ const review = await ClientService.getAllReviews({ agent_id });
 
-  const review = await ClientService.getAllReviews({ agent_id });
-
-  res.status(200).json(review);
+ res.status(httpStatus.OK).json({
+    success: true,
+    message: "Reviews retrieved successfully",
+    data: review?.data || [],
+    avergeReview: review?.avergeReview || 0,
+    totalReviews: review?.totalReviews || 0,
+  });
 });
 
 
 const deleteReview = catchAsync(async (req, res) => {
+  
+  if (!userId) {
+    throw new ApiError(400, 'userId parameter is required in the URL',"userId parameter is required in the URL");
+  }
   await userService.deleteUserById(req.params.userId);
-  res.status(httpStatus.NO_CONTENT).send();
+   res.status(204).json({
+    success:true,
+    message:"Review deleted successfully",
+  })
 });
 
 const getSingleReview = catchAsync(async (req, res) => {
-  console.log(req.params.id)
-  const data = await ClientService.getReviewById(req.params.id);
-  res.send(data);
+  const reviewId = req.params.id;
+
+  if (!reviewId) {
+    throw new ApiError(400, 'Review ID is required in URL parameters');
+  }
+
+  const review = await ClientService.getReviewById(reviewId);
+
+  if (!review) {
+    throw new ApiError(404, 'Review not found');
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Review fetched successfully',
+    data: {
+      id: review.id,
+      user_id: review.user_id,
+      agent_id: review.agent_id,
+      rating: review.rating,
+      comment: review.comment,
+      created_at: review.created_at,
+    },
+  });
 });
 
 const getAgentsDetails = catchAsync(async (req, res) => {
@@ -230,16 +296,29 @@ const getAgentsDetails = catchAsync(async (req, res) => {
   const user_id = req.user.userId;
   if (!agent_id) return { message: "id is required" }
   const agentdetail = await ClientService.getAgentsByID(user_id,agent_id)
-  res.status(200).send(agentdetail)
+  res.status(200).json({
+    success: true,
+   message: "Agent details retrieved successfully",
+   agentdetail
+  })
 })
 
 
-const getActiveBanners=catchAsync(async (req,res) => {
-  const city_id =req.query.city_id
-  const banner = await ClientService.retrieveActiveBanners(city_id)
-  res.status(200).send(banner)
-})
+const getActiveBanners = catchAsync(async (req, res) => {
+  const city_id = req.query.city_id;
 
+  if (!city_id) {
+    throw new ApiError(400, 'city_id is required in query parameters');
+  }
+
+  const banners = await ClientService.retrieveActiveBanners(city_id);
+
+  res.status(200).json({
+    success: true,
+    message: 'Active banners retrieved successfully',
+    data: banners,
+  });
+});
 
 const createPropertyRequest = catchAsync(async (req, res) => {
   const user_id = req.user.userId;
@@ -251,9 +330,7 @@ const createPropertyRequest = catchAsync(async (req, res) => {
     your_requirements
   } = req.body;
 
- if (!you_want_to || !property_type) {
-  return res.status(400).json({ message: 'you_want_to and property_type are required' });
-}
+  if (!you_want_to || !property_type) {throw new ApiError(400, 'Both you_want_to and property_type are required')}
 
   const data = {
     user_id,
@@ -266,7 +343,8 @@ const createPropertyRequest = catchAsync(async (req, res) => {
  console.log("hello")
   const result = await PropertyRequestService.createPropertyRequest(data);
 
-  res.status(201).json({
+   res.status(201).json({
+    success: true,
     message: 'Property request created successfully',
     data: result
   });
@@ -274,9 +352,13 @@ const createPropertyRequest = catchAsync(async (req, res) => {
 
 
 const getAgentsByLocationwitoutlogin =catchAsync(async(req,res)=>{
-  if (!req?.query?.locationId) return res.status(httpStatus.BAD_REQUEST).json({ message: "Location is required" });
+   if (!req?.query?.locationId) throw new ApiError(httpStatus.BAD_REQUEST, "Location ID is required", "LOCATION_ID_REQUIRED");
   const user = await ClientService.getAgentsByLocationwitoutlogin(req.query.locationId);
-  res.status(httpStatus.CREATED).send(user);
+    res.status(200).json({
+    success:true,
+    message:"Public agents retrieved successfully",
+    user
+   })
 })
 
 

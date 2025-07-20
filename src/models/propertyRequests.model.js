@@ -1,4 +1,5 @@
 const pool = require('../config/db.config');
+const ApiError =require('../utils/ApiError')
 
 const PropertyRequests = {
   // CREATE
@@ -21,7 +22,7 @@ const PropertyRequests = {
       return { insertId: result.insertId };
     } catch (error) {
       console.error('Error in PropertyRequests.create:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -35,7 +36,7 @@ const PropertyRequests = {
       return { data: rows };
     } catch (error) {
       console.error('Error in PropertyRequests.findAll:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -49,7 +50,7 @@ const PropertyRequests = {
       return { data: rows[0] || null };
     } catch (error) {
       console.error('Error in PropertyRequests.findByPk:', error);
-      return { error: error.message };
+       throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -78,7 +79,7 @@ const PropertyRequests = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in PropertyRequests.update:', error);
-      return { error: error.message };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 
@@ -92,7 +93,7 @@ const PropertyRequests = {
       return { affectedRows: result.affectedRows };
     } catch (error) {
       console.error('Error in PropertyRequests.destroy:', error);
-      return { error: error.message };
+      throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }
   },
 };

@@ -2,34 +2,27 @@ const httpStatus = require('http-status');
 const { Agent } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { sendOTP, deleteOtp, deleteAccount } = require('../utils/twilio');
-const moment = require('moment')
-
+const moment = require('moment');
 
 const createUser = async (userBody) => {
   try {
     const { name, phone, email } = userBody;
     console.log('User Body:', userBody);
 
-    // Check if phone already exists
     const isPhoneExists = await Agent.isMobilePhone(phone);
     if (isPhoneExists) {
       return { error: true, message: 'Phone number is already registered' };
     }
 
-    // Generate OTP and expiry
-    const otp = 123456; // In production, use random generator
+    const otp = 123456;
     const expiresAt = moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
 
-    // Create new agent
     const user = await Agent.create(name, phone, email);
     if (!user || !user.id) {
       return { error: true, message: 'Failed to create user' };
     }
 
-    // Save OTP in DB
     await Agent.isSaveOtp(user.id, otp, expiresAt);
-
-    // Send OTP (Uncomment in production)
     // await sendOTP(phone, otp);
 
     return {
@@ -40,29 +33,21 @@ const createUser = async (userBody) => {
         phone: phone,
       }
     };
-
   } catch (error) {
     console.error("Error in createUser:", error);
-    return {
-      error: true,
-      message: error.message || 'An error occurred while creating user'
-    };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 };
-
 
 
 const loginUserWithEmailAndPassword = async (phone) => {
   try {
     let user = await Agent.getUserByPhone(phone);
 
-    // If user not found, create new
     if (!user || !user.id) {
-      user = await Agent.create(phone); // update the existing `user` variable
+      user = await Agent.create(phone);
     }
-     
-    console.log(user)
-    // Send OTP
+
     const otp = 123456;
     const expiresAt = moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
     await Agent.isSaveOtp(user.id, otp, expiresAt);
@@ -74,97 +59,84 @@ const loginUserWithEmailAndPassword = async (phone) => {
         phone: user.phone,
       }
     };
-
   } catch (err) {
     console.error("Error in loginUserWithEmailAndPassword:", err);
-    return { error: true, message: "Server error while sending OTP" };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 };
-
-
 
 
 const verifyOtp = async (phone, otp) => {
   try {
     const user = await Agent.getUserByPhone(phone);
-
-    // Check if user exists
-    if (!user || !user.id) {
-      return { error: true, message: "Agent not found with this phone number" };
+    if (!user || user.success === false) {
+      throw new ApiError(httpStatus.NOT_FOUND, "We couldn't find a user with the provided phone number.", "USER_NOT_FOUND");
     }
 
-    // Verify OTP
     const verificationResult = await Agent.getOtpByUserId(user.id, otp);
-    console.log(verificationResult,"jjj")
-
-      if (!verificationResult || verificationResult.success === false) {
-       return {
+    if (!verificationResult || verificationResult.success === false) {
+      return {
         success: false,
         message: verificationResult?.message || 'Invalid or expired OTP'
-      };;
+      };
     }
 
     return {
-      success: true,
-      message: verificationResult.message,
-      user: {
-        id: user.id,
-        name: user.name,
-        phone: user.phone,
-        status: user.status,
-        role: user.role
-      }
+      user: user.data
     };
-
   } catch (err) {
     console.error("Error in verifyOtp:", err);
-    return { error: true, message: "Server error during OTP verification" };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 };
-
 
 
 const handleResendOtp = async (phone) => {
   try {
     const user = await Agent.getUserByPhone(phone);
-    if (user.error) {
-      return { error: "User not found" };
+    if (!user || user.success === false) {
+      throw new ApiError(httpStatus.NOT_FOUND, "We couldn't find a user with the provided phone number.", "USER_NOT_FOUND");
     }
-    const otp = 123456 // 4-digit OTP
+
+    const otp = 123456;
     const expiresAt = moment().add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
     await Agent.isSaveOtp(user.id, otp, expiresAt);
-    // await sendOTP(PHONE_NUMBER, otp);
-    return { message: "OTP resent successfully" };
+
+    return { user: user };
   } catch (err) {
     console.error("Error in handleResendOtp:", err);
-    return { error: "Server error while resending OTP" };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
-}
-
+};
 
 
 const deactivateUserAccount = async (user_id) => {
   try {
     const user = await Agent.getUserById(user_id);
-    if (user.error) return { error: "User not found" };
-    const otp = 123456
+    if (user.error) {
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found', 'USER_NOT_FOUND');
+    }
+
+    const otp = 123456;
     const expiresAt = moment().add(5, "minutes").format("YYYY-MM-DD HH:mm:ss");
     await Agent.isSaveOtp(user.id, otp, expiresAt);
     await deleteOtp(user.phone, otp);
+
     return { message: "OTP sent to your phone for account deletion." };
   } catch (error) {
-    return { message: "An error occurred while deactivating your account. Please try again later." };
+    console.error("Error in deactivateUserAccount:", error);
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 };
 
 
 const deleteUserAccount = async (user_id, otp) => {
   try {
-    // 1. Fetch user by ID
     const user = await Agent.getUserById(user_id);
     if (!user || user.error) {
-      return { success: false, message: "User not found." };
+      throw new ApiError(httpStatus.NOT_FOUND, 'User not found', 'USER_NOT_FOUND');
     }
+
     const savedOtp = await Agent.getOtpByUserId(user.id, otp);
     if (!savedOtp) {
       return { success: false, message: "OTP not found. Please request a new one." };
@@ -173,31 +145,36 @@ const deleteUserAccount = async (user_id, otp) => {
     if (savedOtp.error) {
       return { success: false, message: "Invalid OTP." };
     }
+
     const data = await Agent.statusUpdate(user.id);
-
-
-    // 5. Send deletion confirmation via SMS
-    await deleteAccount(user.name, user.phone); // Ensure deleteAccount receives phone
+    await deleteAccount(user.name, user.phone);
 
     return { success: true, message: "Your account has been successfully deleted." };
   } catch (error) {
     console.error("Error deleting user account:", error);
-    return { success: false, message: "An error occurred while deleting your account. Please try again later." };
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 };
 
 
 const updateProfile = async (agentId, userBody) => {
-  return Agent.updateProfile(agentId, userBody)
-}
-
-const upsertOfficeAddress = async (agentId, { address, latitude, longitude }) => {
-  console.log(agentId, { address, latitude, longitude })
-  return Agent.UpdateAddress(agentId, { address, latitude, longitude })
+  try {
+    return await Agent.updateProfile(agentId, userBody);
+  } catch (err) {
+    console.error("Error in updateProfile:", err);
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
+  }
 };
 
-
-
+const upsertOfficeAddress = async (agentId, { address, latitude, longitude }) => {
+  try {
+    console.log(agentId, { address, latitude, longitude });
+    return await Agent.UpdateAddress(agentId, { address, latitude, longitude });
+  } catch (err) {
+    console.error("Error in upsertOfficeAddress:", err);
+    throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
+  }
+};
 
 
 module.exports = {
