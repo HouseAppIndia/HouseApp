@@ -75,7 +75,9 @@ const handleOtpVerification = catchAsync(async (req, res) => {
   if (data.success === false) {
     throw new ApiError(400, "OTP_VERIFICATION_FAILED", "OTP_VERIFICATION_FAILED") // OTP failed // OTP failed
   }
+  console.log(data)
   const tokens = await tokenService.generateAuthTokens(data.user);
+  console.log(tokens)
   res.status(200).json({
     success: true,
     message: "Login successfully",

@@ -215,6 +215,7 @@
         },
 
         async getOtpByUserId(userId, otp) {
+            console.log(userId,otp)
             try {
                 const now = moment().format("YYYY-MM-DD HH:mm:ss");
 
@@ -223,20 +224,23 @@
                     WHERE agent_id = ? AND otp_code = ? AND verified = FALSE AND expires_at > ?`,
                     [userId, otp, now]
                 );
+                console.log("a")
 
                 if (otpRows.length === 0) {
                     return { success: false, message: "Invalid or expired OTP" };
                 }
-
+            console.log("aa")
                 await pool.execute(
                     "UPDATE otps SET verified = TRUE WHERE id = ?",
                     [otpRows[0].id]
                 );
+               console.log("b")
 
                 await pool.execute(
                     "UPDATE agents SET status = TRUE WHERE id = ?",
                     [userId]
                 );
+                console.log("c")
 
                 return { success: true, message: "OTP verified successfully" };
             } catch (error) {

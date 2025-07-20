@@ -72,8 +72,9 @@ const verifyOtp = async (phone, otp) => {
     if (!user || user.success === false) {
       throw new ApiError(httpStatus.NOT_FOUND, "We couldn't find a user with the provided phone number.", "USER_NOT_FOUND");
     }
-
+    console.log(user,"http://44.196.216.57:8000/v1/auth/users/agent-detail/1")
     const verificationResult = await Agent.getOtpByUserId(user.id, otp);
+    console.log(verificationResult,"verificationResult")
     if (!verificationResult || verificationResult.success === false) {
       return {
         success: false,
@@ -82,7 +83,7 @@ const verifyOtp = async (phone, otp) => {
     }
 
     return {
-      user: user.data
+      user: user
     };
   } catch (err) {
     console.error("Error in verifyOtp:", err);
