@@ -40,7 +40,11 @@ const addOrUpdateBankDetails = catchAsync(async (req, res) => {
 
 const getBankDetails=catchAsync(async(req,res)=>{
     const result = await AccountService.getAllPaymentDetails();
-    res.status(200).json({ message: 'Saved successfully', result })
+      res.status(200).json({
+    success: true,
+    message: 'Bank details fetched successfully',
+    data: result,
+  });
 })
 
 module.exports = {
