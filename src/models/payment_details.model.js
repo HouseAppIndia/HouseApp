@@ -81,6 +81,7 @@ const PaymentDetails = {
       const [rows] = await pool.execute(query);
       return { data: rows };
     } catch (error) {
+      console.log("hhh")
       console.error('Error in PaymentDetails.findAll:', error);
        throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
     }

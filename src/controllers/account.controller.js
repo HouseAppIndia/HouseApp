@@ -39,6 +39,7 @@ const addOrUpdateBankDetails = catchAsync(async (req, res) => {
 
 
 const getBankDetails=catchAsync(async(req,res)=>{
+  console.log("hhhhe")
     const result = await AccountService.getAllPaymentDetails();
       res.status(200).json({
     success: true,
