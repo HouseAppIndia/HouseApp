@@ -58,6 +58,7 @@ const User = {
 
   async create(userData) {
     try {
+      console.log(userData)
       // 1. Email uniqueness
       const emailTaken = await this.isEmailTaken(userData.email);
       if (emailTaken) {
@@ -1446,13 +1447,33 @@ async getAgentViewCountsPerUser(page = 1, limit = 10) {
     totalPages: Math.ceil(countResult[0].total / limit),
     totalRecords: countResult[0].total,
   };
+},
+
+async removeAgentLocation(agentId, locationId){
+  const query = `
+    DELETE FROM agent_working_locations
+    WHERE agent_id = ? AND location_id = ?;
+  `;
+  await pool.execute(query, [agentId, locationId]);
+},
+async  addAgentWorkingLocation(agentId, locationId, cityId, areaId) {
+  const query = `
+    INSERT INTO agent_working_locations 
+      (agent_id, location_id, city_id, area_id, is_approved, ranking)
+    VALUES (?, ?, ?, ?, true, 1)
+  `;
+  const [result] = await db.execute(query, [agentId, locationId, cityId, areaId]);
+  return result.insertId;
+},
+async  checkLocationExists(agentId, locationId) {
+  const query = `
+    SELECT id 
+    FROM agent_working_locations
+    WHERE agent_id = ? AND location_id = ?
+  `;
+  const [rows] = await db.execute(query, [agentId, locationId]);
+  return rows.length > 0; // true if exists
 }
-
-
-
-
-
-
 };
 
 module.exports = User;

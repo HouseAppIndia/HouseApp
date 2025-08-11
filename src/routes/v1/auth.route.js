@@ -48,5 +48,7 @@ router.route('/agents/:agentId/sponsorships').post(SponserController.createSpons
 router.route('/agent-view-log').get(authController.getAgentViewLog)
 router.route('/search-activity-log').get(authController.getSearchActivityLogs)
 router.route('/locality-viewers/:localityId').get(authController.getLocalityViewers)
+router.route('/remove-agent-location').delete(authController.removeAgentLocationMapping)
+router.route('/add-agent-location').post(authController.addOrUpdateLocationController)
 module.exports = router;
 

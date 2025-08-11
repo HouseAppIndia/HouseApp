@@ -506,6 +506,35 @@ const getLocalityViewers =catchAsync(async(req,res)=>{
     res.status(200).json({ data: viewers });
 })
 
+const removeAgentLocationMapping =catchAsync(async (req, res)=>{
+  const {agentId,localityId}=req.body;
+  if (!agentId || !localityId) {
+     return res.status(400).json({success:false,message:"Agent Id and Locality Id  are Required"})  }
+    const data= await userService.removeAgentLocationMapping(agentId, localityId)
+    return res.status(200).json({
+      success: true,
+      message:"Agent Working Location delete Sucessfully"   })
+})
+const addOrUpdateLocationController = catchAsync(async (req, res) => {
+  const { agent_id, location_id, city_id, area_id } = req.body;
+
+  if (!agent_id || !location_id || !city_id) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Required fields missing" });
+  }
+
+  const result = await userService.addWorkingLocation(
+    agent_id,
+    location_id,
+    city_id,
+    area_id ?? null // Use null if undefined
+  );
+
+  return res.status(result.success ? 200 : 409).json(result);
+});
+
+
 
 
 module.exports = {
@@ -550,5 +579,7 @@ module.exports = {
   getAgentsDetails,
   deletedata,
   deleteAgents,
-  getAgentViewLog
+  getAgentViewLog,
+  removeAgentLocationMapping,
+  addOrUpdateLocationController
 };

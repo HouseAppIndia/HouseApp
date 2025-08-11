@@ -430,7 +430,42 @@ const getSelectedBanner =async(id)=>{
    }
 }
 
+
+const deleteAgentWorkingLocation=async(agentId, locationId) =>{
+  try {
+    await User.removeAgentLocation(agentId, locationId)
+    return {
+      success: true,
+      message:  'Agent working  location deleted sucessfully'
+    }
+  } catch (error) {
+     console.error('Error deleting agnent working location:', error);
+     return {
+      success: false,
+      message :   'Failed to delete agent working location',
+      error:error.message,     
+    }
+  }
+}
+
+
+async function addWorkingLocation(agentId, locationId, cityId, areaId) {
+  // Check if already exists
+  const exists = await User.checkLocationExists(agentId, locationId);
+  if (exists) {
+    return { success: false, message: "Location already exists for this agent" };
+  }
+
+  // Insert new location
+  await User.addAgentWorkingLocation(agentId, locationId, cityId, areaId);
+  return { success: true, message: "Location added successfully" };
+}
+
+
+
 module.exports = {
+  deleteAgentWorkingLocation,
+  addWorkingLocation,
   createUser,
   getUsersWhoViewedLocality,
   queryUsers,
