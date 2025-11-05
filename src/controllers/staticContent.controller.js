@@ -1,4 +1,4 @@
-const { AboutUs, PrivacyPolicies, TermsConditions } = require('../models/staticContent.model');
+const { AboutUs, PrivacyPolicies, TermsConditions,ContactUs } = require('../models/staticContent.model');
 
 // About Us
 exports.createAboutUs = async (req, res) => {
@@ -81,6 +81,29 @@ exports.updateTermsConditions = async (req, res) => {
     }
   } catch (err) {
     console.error('Error updating Terms:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+
+exports.createContactUs = async (req, res) => {
+  try {
+    console.log(req.body,"gkjtreik")
+    const { content, status } = req.body;
+    const about = await ContactUs.createOrUpdate({ title:"Contact Support", content, status });
+    res.status(201).json({ success: true, data: about });
+  } catch (err) {
+    console.error('Error creating Contact Us:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
+exports.getContactUs = async (req, res) => {
+  try {
+    const data = await ContactUs.findAll();
+    res.status(200).json({ success: true, data });
+  } catch (err) {
+    console.error('Error getting Contact Us:', err);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

@@ -313,9 +313,22 @@ async function createStaticContentTables() {
     );
   `;
 
+  const contactUsQuery = `
+  CREATE TABLE IF NOT EXISTS contact_us (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(255),
+    content TEXT,
+    status BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  );
+`;
+
+
   await pool.execute(aboutUsQuery);
   await pool.execute(privacyPolicyQuery);
   await pool.execute(termsConditionsQuery);
+  await pool.execute(contactUsQuery);
 }
 
 async function AgentHistory() {

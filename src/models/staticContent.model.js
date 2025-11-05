@@ -84,4 +84,5 @@ module.exports = {
   AboutUs: createStaticModel('about_us'),
   PrivacyPolicies: createStaticModel('privacy_policies'),
   TermsConditions: createStaticModel('terms_and_conditions'),
+  ContactUs: createStaticModel('contact_us'),
 };

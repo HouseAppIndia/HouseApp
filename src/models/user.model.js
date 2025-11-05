@@ -1473,7 +1473,59 @@ async  checkLocationExists(agentId, locationId) {
   `;
   const [rows] = await db.execute(query, [agentId, locationId]);
   return rows.length > 0; // true if exists
+},
+async  updateAgent(agentId, updateData) {
+  // Prepare parts of the query dynamically
+  const fields = [];
+  const values = [];
+
+  for (const key in updateData) {
+    fields.push(`${key} = ?`);
+    values.push(updateData[key]);
+  }
+
+  if (fields.length === 0) {
+    // Nothing to update
+    return { success: false, message: 'No data to update' };
+  }
+
+  // Add agentId to values for WHERE clause
+  values.push(agentId);
+
+  const query = `UPDATE agents SET ${fields.join(', ')} WHERE id = ?`;
+
+  const [result] = await pool.execute(query, values);
+
+  return {
+    success: result.affectedRows > 0,
+    affectedRows: result.affectedRows
+  };
+},
+async  addImages(agentId, imageUrls) {
+  if (!agentId) {
+    return { success: false, message: "Agent ID is required" };
+  }
+  if (!imageUrls || imageUrls.length === 0) {
+    return { success: false, message: 'No images to insert' };
+  }
+
+  // Prepare placeholders for batch insert
+  const values = imageUrls.map(url => [agentId, url]);
+  const placeholders = values.map(() => '(?, ?)').join(', ');
+
+  const flatValues = values.flat();
+
+  const query = `INSERT INTO agent_images (agent_id, image_url) VALUES ${placeholders}`;
+
+  const [result] = await pool.execute(query, flatValues);
+
+  return {
+    success: result.affectedRows === imageUrls.length,
+    insertedCount: result.affectedRows
+  };
 }
+
+
 };
 
 module.exports = User;

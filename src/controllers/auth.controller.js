@@ -533,11 +533,61 @@ const addOrUpdateLocationController = catchAsync(async (req, res) => {
 
   return res.status(result.success ? 200 : 409).json(result);
 });
+const updateAgent = catchAsync(async (req, res) => {
+  const agentId = req.params.id;
+  const { name, phone, agency_name, whatsapp_number, email } = req.body;
 
+  const updateData = {
+    ...(name && { name }),
+    ...(phone && { phone }),
+    ...(agency_name && { agency_name }),
+    ...(whatsapp_number && { whatsapp_number }),
+    ...(email && { email }),
+  };
+
+  const hasDataToUpdate = Object.keys(updateData).length > 0;
+  const hasImagesToAdd = req.files && req.files.length > 0;
+
+  if (!hasDataToUpdate && !hasImagesToAdd) {
+    return res.status(400).json({ message: 'No data or images provided to update' });
+  }
+
+  // Update agent data if provided
+  if (hasDataToUpdate) {
+    const result = await userService.updateAgentbyadmin(agentId, updateData);
+    if (!result.success) {
+      return res.status(409).json({ message: 'Failed to update agent data' });
+    }
+  }
+
+  // Replace images if uploaded
+  if (hasImagesToAdd) {
+    
+    const imageUrls = req.files.map(file => '/image/' + file.filename);
+    await userService.addImages(agentId, imageUrls);
+  }
+
+  return res.status(200).json({ message: 'Agent updated successfully' });
+});
+
+const verifyPassword = catchAsync(async (req,res)=>{
+  console.log("hello world")
+  const { userId  } =req.user;
+  const  {password}=req.body;
+  if(!password){
+    return res.status(400).json({message:"Password is required"})
+  }
+  const isMatch =await authService.verifyUserPassword(userId,password);
+  if(!isMatch){
+    return res.status(401).json({message:"Invalid password"})
+  }
+  res.status(200).json({message:"Password verified successfully"})
+})
 
 
 
 module.exports = {
+  updateAgent,
   register,
   getLocalityViewers,
   login,
@@ -581,5 +631,6 @@ module.exports = {
   deleteAgents,
   getAgentViewLog,
   removeAgentLocationMapping,
-  addOrUpdateLocationController
+  addOrUpdateLocationController,
+  verifyPassword
 };

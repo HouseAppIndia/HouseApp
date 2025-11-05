@@ -6,6 +6,7 @@ const SponserController =require('../../controllers/sponsorships.controller')
 const uploadImage =require('../../middlewares/UploadBanner')
 
 const auth = require('../../middlewares/auth');
+console.log("TEST DEBUG");
 
 const router = express.Router();
 router.post('/register', authController.register);
@@ -50,5 +51,7 @@ router.route('/search-activity-log').get(authController.getSearchActivityLogs)
 router.route('/locality-viewers/:localityId').get(authController.getLocalityViewers)
 router.route('/remove-agent-location').delete(authController.removeAgentLocationMapping)
 router.route('/add-agent-location').post(authController.addOrUpdateLocationController)
+router.put('/agents/:id', uploadImage.array('images', 5), authController.updateAgent);
+router.route('/verify_password').post(authController.verifyPassword)
 module.exports = router;
 

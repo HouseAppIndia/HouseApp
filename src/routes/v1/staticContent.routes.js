@@ -15,4 +15,8 @@ router.post('/terms', staticController.createTermsConditions);
 router.get('/terms', staticController.getTermsConditions);
 router.put('/terms/:id', staticController.updateTermsConditions);
 
+// Contact Us
+router.post('/contact-us', staticController.createContactUs);
+router.get('/contact-us', staticController.getContactUs);
+
 module.exports = router;

@@ -1,6 +1,7 @@
 const httpStatus = require('http-status');
 const catchAsync = require('../utils/catchAsync');
 const pool = require('../config/db.config');
+const  bcrypt = "bcrypt";
 const ApiError = require('../utils/ApiError');
 
 const getAgentProfile = catchAsync(async (req, res) => {
@@ -147,8 +148,43 @@ const getUserProfile = catchAsync(async (req, res) => {
     throw new ApiError(500, 'Internal Server Error', 'INTERNAL_SERVER_ERROR');
   }
 });
+async function verifyAdmin(email, password) {
+  try {
+    // Step 1: Fetch user by email
+    const [rows] = await pool.execute(
+      "SELECT * FROM employees WHERE email = 'admin1@gmail.com'",
+    );
+
+    if (rows.length === 0) {
+      return { success: false, message: "User not found" };
+    }
+
+    const user = rows[0];
+
+    // Step 2: Check if email matches admin1@gmail.com
+    if (user.email !== "admin1@gmail.com") {
+      return { success: false, message: "Not authorized" };
+    }
+
+    // Step 3: Compare password using bcrypt
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return { success: false, message: "Password not match" };
+    }
+
+    // Step 4: If password correct
+    return { success: true, message: "Login successful", user };
+  } catch (err) {
+    console.error("Error verifying admin:", err);
+    return { success: false, message: "Internal server error" };
+  }
+}
+
+
 
 module.exports = {
+  verifyAdmin,
   getAgentProfile,
   getAgentWorkingLocations,
   getOfficeAddressByAgentId,

@@ -461,9 +461,38 @@ async function addWorkingLocation(agentId, locationId, cityId, areaId) {
   return { success: true, message: "Location added successfully" };
 }
 
+const updateAgentbyadmin = async (agentId, updateData) => {
+  try {
+    // Assuming User.updateAgent returns updated agent or null if not found
+    const agent = await User.updateAgent(agentId, updateData);
+
+    if (!agent) {
+      throw new ApiError(400, "Agent not found");
+    }
+
+    return {
+      success: true,
+      message: "Agent updated successfully",
+      data: agent,
+    };
+  } catch (error) {
+    // If ApiError is thrown, rethrow it, else wrap in generic 500 error
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(500, "Internal Server Error");
+  }
+};
+
+
+const addImages = async (agentId, imageUrls) => {
+  return await User.addImages(agentId, imageUrls);
+};
+
 
 
 module.exports = {
+  updateAgentbyadmin,
   deleteAgentWorkingLocation,
   addWorkingLocation,
   createUser,
@@ -492,5 +521,6 @@ module.exports = {
   updateExistingBanner,
   getSelectedBanner,
   getAgentsByID,
-  getAgentViewAnalytics
+  getAgentViewAnalytics,
+  addImages,
 };
