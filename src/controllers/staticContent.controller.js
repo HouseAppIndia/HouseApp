@@ -101,6 +101,7 @@ exports.createContactUs = async (req, res) => {
 exports.getContactUs = async (req, res) => {
   try {
     const data = await ContactUs.findAll();
+    console.log(data,"contact us data")
     res.status(200).json({ success: true, data });
   } catch (err) {
     console.error('Error getting Contact Us:', err);
